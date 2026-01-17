@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CrossfaderCurve } from '../types';
 
 interface MixerProps {
+  className?: string;
   crossfader: number;
   onCrossfaderChange: (val: number) => void;
   crossfaderCurve: CrossfaderCurve;
@@ -197,6 +198,7 @@ const Fader: React.FC<{
 };
 
 const Mixer: React.FC<MixerProps> = ({ 
+  className,
   crossfader, onCrossfaderChange, crossfaderCurve, onCurveChange,
   masterVolume, onMasterVolumeChange, deckAVolume, onDeckAVolumeChange, deckBVolume, onDeckBVolumeChange,
   deckAPlaying, deckBPlaying,
@@ -256,7 +258,7 @@ const Mixer: React.FC<MixerProps> = ({
   };
 
   return (
-    <div className="m3-card h-full flex flex-col bg-[#1D1B20] shadow-2xl border-white/5 w-[280px] shrink-0 p-2 select-none" role="region" aria-label="Mixer Controls">
+    <div className={`m3-card h-full flex flex-col bg-[#1D1B20] shadow-2xl border-white/5 w-[280px] shrink-0 p-2 select-none ${className ?? ''}`} role="region" aria-label="Mixer Controls">
       <div className="flex flex-col items-center gap-0 border-b border-white/5 pb-1 mb-2">
         <h2 className="text-[8px] font-black uppercase tracking-[0.4em] text-[#D0BCFF]">Mixing Console</h2>
       </div>
