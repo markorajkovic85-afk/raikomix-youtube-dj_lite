@@ -59,6 +59,126 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             REBOOT CONSOLE
           </button>
         </div>
+        
+        {mobilePanel && (
+          <div className="md:hidden fixed inset-x-0 bottom-16 z-40 px-3 pb-3">
+            <div className="bg-[#1C1B1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh] min-h-[260px]">
+              <div className="flex items-center justify-between gap-2 p-3 border-b border-white/10 bg-black/40">
+                <div className="flex gap-2">
+                  {(['LIBRARY', 'QUEUE', 'EFFECTS'] as const).map((panel) => (
+                    <button
+                      key={panel}
+                      onClick={() => setMobilePanel(panel)}
+                      className={`px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        mobilePanel === panel ? 'bg-[#D0BCFF] text-black' : 'text-gray-400'
+                      }`}
+                    >
+                      {panel === 'LIBRARY' ? 'Library' : panel === 'QUEUE' ? 'Queue' : 'Effects'}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setMobilePanel(null)} className="text-gray-400 hover:text-white">
+                  <span className="material-icons text-sm">close</span>
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden p-3">
+                {mobilePanel === 'LIBRARY' && (
+                  <div className="flex flex-col gap-3 h-full min-h-0">
+                    <SearchPanel 
+                      onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
+                      onAddToQueue={handleAddToQueue} 
+                      onAddToLibrary={(result) => {
+                        setLibrary(prev => {
+                          const res = addTrackToLibrary(`https://www.youtube.com/watch?v=${result.videoId}`, prev);
+                          if (res.success && res.track) {
+                              showNotification('Added to Library', 'success');
+                            const withTrack = [...prev, res.track];
+                            return updateTrackMetadata(result.videoId, { title: result.title, author: result.channelTitle }, withTrack);
+                          }
+                          if (res.error) showNotification(res.error, 'error');
+                          return prev;
+                        });
+                      }} 
+                    />
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <LibraryPanel 
+                        library={library} 
+                        onAddSingle={url => {
+                          setLibrary(prev => {
+                            const res = addTrackToLibrary(url, prev);
+                            if (res.success && res.track) {
+                              showNotification('Added to Library', 'success');
+                              return [...prev, res.track];
+                            }
+                            if (res.error) showNotification(res.error, 'error');
+                            return prev;
+                          });
+                        }} 
+                        onRemove={id => setLibrary(p => removeFromLibrary(id, p))} 
+                        onRemoveMultiple={handleRemoveMultiple}
+                        onLoadToDeck={(track, deck) => handleLoadVideo(track.videoId, track.url, deck, track.sourceType, track.title, track.author)} 
+                        onAddToQueue={handleAddToQueue} 
+                        onUpdateMetadata={(v, m) => { setLibrary(updateTrackMetadata(v, m, library)); showNotification('Metadata Saved'); }} 
+                        onImportLibrary={setLibrary} 
+                      />
+                    </div>
+                  </div>
+                )}
+                {mobilePanel === 'QUEUE' && (
+                  <div className="h-full">
+                    <QueuePanel 
+                      queue={queue} 
+                      onLoadToDeck={(i, d) => { handleLoadVideo(i.videoId, i.url, d, i.sourceType || 'youtube', i.title, i.author); setQueue(p => p.filter(q => q.id !== i.id)); }} 
+                      onRemove={id => setQueue(p => p.filter(i => i.id !== id))} 
+                      onClear={() => setQueue([])} 
+                      onReorder={() => {}} 
+                    />
+                  </div>
+                )}
+                {mobilePanel === 'EFFECTS' && (
+                  <div className="h-full overflow-y-auto">
+                    <EffectsPanel
+                      activeEffect={targetEffect}
+                      effectAmount={targetWet}
+                      effectIntensity={targetIntensity}
+                      onEffectToggle={(effect) => {
+                        if (fxTarget === 'A') toggleEffect('A', effect);
+                        else if (fxTarget === 'B') toggleEffect('B', effect);
+                        else {
+                          toggleEffect('A', effect);
+                          toggleEffect('B', effect);
+                        }
+                      }}
+                      onAmountChange={(amount) => {
+                        if (fxTarget === 'A') setDeckAEffectWet(amount);
+                        else if (fxTarget === 'B') setDeckBEffectWet(amount);
+                        else {
+                          setDeckAEffectWet(amount);
+                          setDeckBEffectWet(amount);
+                        }
+                      }}
+                      onIntensityChange={(amount) => {
+                        if (fxTarget === 'A') setDeckAEffectIntensity(amount);
+                        else if (fxTarget === 'B') setDeckBEffectIntensity(amount);
+                        else {
+                          setDeckAEffectIntensity(amount);
+                          setDeckBEffectIntensity(amount);
+                        }
+                      }}
+                      color={targetColor}
+                      target={fxTarget}
+                      onTargetChange={setFxTarget}
+                      mixedEffect={isMixedEffect}
+                      mixedAmount={isMixedWet}
+                      mixedIntensity={isMixedIntensity}
+                      showStreamingNotice={streamingNotice}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
     return children;
@@ -93,6 +213,8 @@ const App: React.FC = () => {
 
   const [deckAEq, setDeckAEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
   const [deckBEq, setDeckBEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
+  const [mobilePanel, setMobilePanel] = useState<'LIBRARY' | 'QUEUE' | 'EFFECTS' | null>(null);
+  const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
 
   const deckARef = useRef<DeckHandle>(null);
   const deckBRef = useRef<DeckHandle>(null);
@@ -104,6 +226,8 @@ const App: React.FC = () => {
       setLibraryOpen(false);
       setQueueOpen(false);
       setEffectsOpen(false);
+      setMobilePanel(null);
+      setMobileDeckFocus('A');
     }
   }, []);
 
@@ -193,7 +317,7 @@ const App: React.FC = () => {
     : fxTarget === 'B'
       ? deckBState?.sourceType === 'youtube'
       : deckAState?.sourceType === 'youtube' || deckBState?.sourceType === 'youtube';
-const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || (viewMode === 'PERFORM' && effectsOpen);
+ const showMobileScrim = mobilePanel !== null;
   
   const handleRemoveMultiple = useCallback((ids: string[]) => {
     setLibrary(prev => prev.filter(track => !ids.includes(track.id)));
@@ -239,21 +363,17 @@ const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || 
           </div>
         </nav>
 
-         <div className="flex-1 flex overflow-hidden relative min-h-0 pb-20 md:pb-0">
+        <div className="flex-1 flex overflow-hidden relative min-h-0 pb-20 md:pb-0">
           {showMobileScrim && (
             <button
               className="md:hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-30"
-              onClick={() => { setLibraryOpen(false); setQueueOpen(false); setEffectsOpen(false); }}
+              onClick={() => setMobilePanel(null)}
               aria-label="Close panels"
             />
           )}
              {viewMode === 'LIBRARY' ? (
- <section className={`bg-black/20 border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300 flex-none h-full md:relative md:translate-x-0 md:w-[420px] ${libraryOpen ? 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[420px] translate-x-0' : 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[420px] -translate-x-full md:w-0 md:border-none'}`}>
+            <section className={`hidden md:flex bg-black/20 border-r border-white/5 overflow-hidden flex-col transition-all duration-300 flex-none h-full md:relative md:translate-x-0 md:w-[420px] ${libraryOpen ? 'md:w-[420px]' : 'md:w-0 md:border-none'}`}>
               <div className={`p-4 flex flex-col gap-4 h-full min-w-[320px] min-h-0 ${!libraryOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 transition-opacity'}`}>
-                <div className="md:hidden flex items-center justify-between border-b border-white/5 pb-2">
-                  <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Library Console</span>
-                  <button onClick={() => setLibraryOpen(false)} className="text-gray-500 hover:text-white"><span className="material-icons text-sm">close</span></button>
-                </div>
                 <SearchPanel 
                   onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
                   onAddToQueue={handleAddToQueue} 
@@ -295,13 +415,9 @@ const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || 
               </div>
             </section>
           ) : (
- <section className={`bg-black/20 border-r border-white/5 flex flex-col h-full shrink-0 md:w-[320px] md:relative md:translate-x-0 ${effectsOpen ? 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[360px] translate-x-0' : 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[360px] -translate-x-full md:w-[320px]'}`}>
-              <div className="p-4 flex flex-col gap-4 h-full">
-                <div className="md:hidden flex items-center justify-between border-b border-white/5 pb-2">
-                  <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Effects Console</span>
-                  <button onClick={() => setEffectsOpen(false)} className="text-gray-500 hover:text-white"><span className="material-icons text-sm">close</span></button>
-                </div>
-                <EffectsPanel
+           <section className={`hidden md:flex bg-black/20 border-r border-white/5 flex-col h-full shrink-0 md:w-[320px] md:relative md:translate-x-0 ${effectsOpen ? 'md:w-[320px]' : 'md:w-[320px]'}`}>              <div className="p-4 flex flex-col gap-4 h-full">
+              <div className="p-4 flex flex-col gap-4 h-full">          
+                  <EffectsPanel
                    activeEffect={targetEffect}
                   effectAmount={targetWet}
                   effectIntensity={targetIntensity}
@@ -341,18 +457,45 @@ const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || 
             </section>
           )}
 
-          <section className="flex-1 flex flex-col p-4 items-center justify-center overflow-auto min-h-0">
-             <div className="flex flex-col md:flex-col lg:flex-row gap-6 items-center w-full">
-             <Deck ref={deckARef} id="A" color="#D0BCFF" eq={deckAEq} effect={deckAEffect} effectWet={deckAEffectWet} effectIntensity={deckAEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('A', s)} onPlayerReady={p => setMasterPlayerA(p)} />
-              <Mixer crossfader={crossfader} onCrossfaderChange={setCrossfader} crossfaderCurve={xFaderCurve} onCurveChange={setXFaderCurve} masterVolume={masterVolume} onMasterVolumeChange={setMasterVolume} deckAVolume={deckAVolume} onDeckAVolumeChange={setDeckAVolume} deckBVolume={deckBVolume} onDeckBVolumeChange={setDeckBVolume} deckAPlaying={deckAState?.playing || false} deckBPlaying={deckBState?.playing || false} deckAEq={deckAEq} deckBEq={deckBEq} onDeckAEqChange={(k, v) => setDeckAEq(p => ({...p, [k]: v}))} onDeckBEqChange={(k, v) => setDeckBEq(p => ({...p, [k]: v}))} />
-                 <Deck ref={deckBRef} id="B" color="#F2B8B5" eq={deckBEq} effect={deckBEffect} effectWet={deckBEffectWet} effectIntensity={deckBEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('B', s)} onPlayerReady={p => setMasterPlayerB(p)} />
+           <section className="flex-1 flex flex-col p-4 items-center justify-center overflow-auto min-h-0" id="main-content">
+            {/* Responsive performance layout: stacked on portrait, dual-deck on landscape/tablet. */}
+            <div className="w-full flex flex-col gap-4">
+              <div className="min-[568px]:hidden flex items-center justify-between bg-black/40 border border-white/10 rounded-full px-3 py-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Deck Focus</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMobileDeckFocus('A')}
+                    className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${mobileDeckFocus === 'A' ? 'bg-[#D0BCFF] text-black' : 'text-gray-400'}`}
+                    aria-pressed={mobileDeckFocus === 'A'}
+                  >
+                    Deck A
+                  </button>
+                  <button
+                    onClick={() => setMobileDeckFocus('B')}
+                    className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${mobileDeckFocus === 'B' ? 'bg-[#F2B8B5] text-black' : 'text-gray-400'}`}
+                    aria-pressed={mobileDeckFocus === 'B'}
+                  >
+                    Deck B
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col min-[568px]:flex-row gap-4 items-center justify-center w-full">
+                <div className={`w-full min-[568px]:flex-1 min-w-[240px] ${mobileDeckFocus === 'A' ? 'flex' : 'hidden'} min-[568px]:flex`}>
+                  <Deck ref={deckARef} id="A" color="#D0BCFF" eq={deckAEq} effect={deckAEffect} effectWet={deckAEffectWet} effectIntensity={deckAEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('A', s)} onPlayerReady={p => setMasterPlayerA(p)} />
+                </div>
+                <div className="w-full min-[568px]:w-[260px] max-w-md min-[568px]:max-w-[280px]">
+                  <Mixer crossfader={crossfader} onCrossfaderChange={setCrossfader} crossfaderCurve={xFaderCurve} onCurveChange={setXFaderCurve} masterVolume={masterVolume} onMasterVolumeChange={setMasterVolume} deckAVolume={deckAVolume} onDeckAVolumeChange={setDeckAVolume} deckBVolume={deckBVolume} onDeckBVolumeChange={setDeckBVolume} deckAPlaying={deckAState?.playing || false} deckBPlaying={deckBState?.playing || false} deckAEq={deckAEq} deckBEq={deckBEq} onDeckAEqChange={(k, v) => setDeckAEq(p => ({...p, [k]: v}))} onDeckBEqChange={(k, v) => setDeckBEq(p => ({...p, [k]: v}))} />
+                </div>
+                <div className={`w-full min-[568px]:flex-1 min-w-[240px] ${mobileDeckFocus === 'B' ? 'flex' : 'hidden'} min-[568px]:flex`}>
+                  <Deck ref={deckBRef} id="B" color="#F2B8B5" eq={deckBEq} effect={deckBEffect} effectWet={deckBEffectWet} effectIntensity={deckBEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('B', s)} onPlayerReady={p => setMasterPlayerB(p)} />
+                </div>
+              </div>
             </div>
           </section>
 
-             {viewMode === 'LIBRARY' && (
+          {viewMode === 'LIBRARY' && (
             <>
-              <aside className={`bg-black/10 flex-none border-l border-white/5 flex flex-col transition-all duration-300 overflow-hidden md:relative md:translate-x-0 md:w-80 md:p-4 ${queueOpen ? 'fixed inset-y-0 right-0 z-40 w-[85%] max-w-[320px] p-4 translate-x-0' : 'fixed inset-y-0 right-0 z-40 w-[85%] max-w-[320px] p-0 translate-x-full md:w-0 md:p-0 md:border-none'}`}>
-                <div className={`h-full min-w-[260px] ${!queueOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 visible transition-opacity'}`}>
+                  <aside className={`hidden md:flex bg-black/10 flex-none border-l border-white/5 flex-col transition-all duration-300 overflow-hidden md:relative md:translate-x-0 md:w-80 md:p-4 ${queueOpen ? 'md:w-80 md:p-4' : 'md:w-0 md:p-0 md:border-none'}`}>                <div className={`h-full min-w-[260px] ${!queueOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 visible transition-opacity'}`}>
                   <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                     <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Queue Console</span>
                     <button onClick={() => setQueueOpen(false)} className="text-gray-500 hover:text-white"><span className="material-symbols-outlined text-sm">close</span></button>
@@ -420,19 +563,18 @@ const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || 
 
          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 border-t border-white/10 backdrop-blur-xl">
           <div className="flex items-center justify-around py-2 px-3 text-xs">
-            <button onClick={() => { setViewMode('PERFORM'); setEffectsOpen(false); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'PERFORM' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
-              <span className="material-icons text-lg">speed</span>
+            <button onClick={() => { setViewMode('PERFORM'); setMobilePanel(null); setEffectsOpen(false); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'PERFORM' && !mobilePanel ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>              <span className="material-icons text-lg">speed</span>
               <span className="uppercase tracking-widest text-[9px]">Perform</span>
             </button>
-            <button onClick={() => { setViewMode('LIBRARY'); setLibraryOpen(true); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'LIBRARY' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
+            <button onClick={() => { setViewMode('LIBRARY'); setMobilePanel('LIBRARY'); setLibraryOpen(true); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'LIBRARY' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
               <span className="material-icons text-lg">grid_view</span>
               <span className="uppercase tracking-widest text-[9px]">Library</span>
             </button>
-            <button onClick={() => { setQueueOpen(true); setLibraryOpen(false); setEffectsOpen(false); }} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
+            <button onClick={() => { setMobilePanel('QUEUE'); setViewMode('LIBRARY'); setQueueOpen(true); setLibraryOpen(false); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'QUEUE' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
               <span className="material-icons text-lg">playlist_play</span>
               <span className="uppercase tracking-widest text-[9px]">Queue</span>
             </button>
-            <button onClick={() => { setViewMode('PERFORM'); setEffectsOpen(true); setLibraryOpen(false); }} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
+            <button onClick={() => { setViewMode('PERFORM'); setMobilePanel('EFFECTS'); setEffectsOpen(true); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'EFFECTS' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
               <span className="material-icons text-lg">tune</span>
               <span className="uppercase tracking-widest text-[9px]">Effects</span>
             </button>
