@@ -370,7 +370,8 @@ const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || 
               {!queueOpen && (
                 <button 
                   onClick={() => setQueueOpen(true)}
-                 className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black w-8 h-20 rounded-l-xl items-center justify-center z-50 shadow-xl hover:w-10 transition-all"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black w-8 h-20 rounded-l-xl items-center justify-center z-50 shadow-xl hover:w-10 transition-all"
+                >
                   <span className="material-icons rotate-180">chevron_left</span>
                 </button>
               )}
