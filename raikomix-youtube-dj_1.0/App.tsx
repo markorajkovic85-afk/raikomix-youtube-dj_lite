@@ -415,7 +415,7 @@ const App: React.FC = () => {
               </div>
             </section>
           ) : (
-           <section className={`hidden md:flex bg-black/20 border-r border-white/5 flex-col h-full shrink-0 md:w-[320px] md:relative md:translate-x-0 ${effectsOpen ? 'md:w-[320px]' : 'md:w-[320px]'}`}>              <div className="p-4 flex flex-col gap-4 h-full">
+           <section className={`hidden md:flex bg-black/20 border-r border-white/5 flex-col h-full shrink-0 md:w-[320px] md:relative md:translate-x-0 ${effectsOpen ? 'md:w-[320px]' : 'md:w-[320px]'}`}>
               <div className="p-4 flex flex-col gap-4 h-full">          
                   <EffectsPanel
                    activeEffect={targetEffect}
