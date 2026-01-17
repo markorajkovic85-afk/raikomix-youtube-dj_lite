@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'PERFORM' | 'LIBRARY'>('LIBRARY');
   const [libraryOpen, setLibraryOpen] = useState(true);
   const [queueOpen, setQueueOpen] = useState(true);
+  const [effectsOpen, setEffectsOpen] = useState(false);
   const [library, setLibrary] = useState<LibraryTrack[]>(() => loadLibrary());
   const [deckAState, setDeckAState] = useState<PlayerState | null>(null);
   const [deckBState, setDeckBState] = useState<PlayerState | null>(null);
@@ -98,6 +99,13 @@ const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => { saveLibrary(library); }, [library]);
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      setLibraryOpen(false);
+      setQueueOpen(false);
+      setEffectsOpen(false);
+    }
+  }, []);
 
   const showNotification = (msg: string, type: ToastType = 'info') => setToast({ msg, type });
 
@@ -185,7 +193,8 @@ const App: React.FC = () => {
     : fxTarget === 'B'
       ? deckBState?.sourceType === 'youtube'
       : deckAState?.sourceType === 'youtube' || deckBState?.sourceType === 'youtube';
-
+const showMobileScrim = (viewMode === 'LIBRARY' && libraryOpen) || queueOpen || (viewMode === 'PERFORM' && effectsOpen);
+  
   const handleRemoveMultiple = useCallback((ids: string[]) => {
     setLibrary(prev => prev.filter(track => !ids.includes(track.id)));
     showNotification(`Removed ${ids.length} items from Library`);
@@ -209,8 +218,8 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-       <div className="h-screen bg-[#1C1B1F] text-white flex overflow-hidden font-['Roboto']" data-theme={theme}>
-        <nav className="w-16 bg-black/40 border-r border-white/5 flex flex-col items-center py-8 gap-10 shrink-0">
+       <div className="h-screen bg-[#1C1B1F] text-white flex flex-col md:flex-row overflow-hidden font-['Roboto']" data-theme={theme}>
+        <nav className="hidden md:flex w-16 bg-black/40 border-r border-white/5 flex-col items-center py-8 gap-10 shrink-0">
           <button onClick={() => setViewMode('PERFORM')} className={`flex flex-col items-center gap-1 transition-all ${viewMode === 'PERFORM' ? 'text-[#D0BCFF] scale-110' : 'text-gray-600 hover:text-gray-400'}`}>
             <span className="material-icons text-3xl">speed</span>
             <span className="text-[7px] font-black uppercase tracking-widest">Perform</span>
@@ -230,10 +239,21 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        <div className="flex-1 flex overflow-hidden relative min-h-0">
+         <div className="flex-1 flex overflow-hidden relative min-h-0 pb-20 md:pb-0">
+          {showMobileScrim && (
+            <button
+              className="md:hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-30"
+              onClick={() => { setLibraryOpen(false); setQueueOpen(false); setEffectsOpen(false); }}
+              aria-label="Close panels"
+            />
+          )}
              {viewMode === 'LIBRARY' ? (
-            <section className={`bg-black/20 border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300 flex-none h-full ${libraryOpen ? 'w-[420px]' : 'w-0 border-none'}`}>
-              <div className={`p-4 flex flex-col gap-4 h-full min-w-[380px] min-h-0 ${!libraryOpen ? 'opacity-0' : 'opacity-100 transition-opacity'}`}>
+ <section className={`bg-black/20 border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300 flex-none h-full md:relative md:translate-x-0 md:w-[420px] ${libraryOpen ? 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[420px] translate-x-0' : 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[420px] -translate-x-full md:w-0 md:border-none'}`}>
+              <div className={`p-4 flex flex-col gap-4 h-full min-w-[320px] min-h-0 ${!libraryOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 transition-opacity'}`}>
+                <div className="md:hidden flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Library Console</span>
+                  <button onClick={() => setLibraryOpen(false)} className="text-gray-500 hover:text-white"><span className="material-icons text-sm">close</span></button>
+                </div>
                 <SearchPanel 
                   onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
                   onAddToQueue={handleAddToQueue} 
@@ -275,8 +295,12 @@ const App: React.FC = () => {
               </div>
             </section>
           ) : (
-            <section className="bg-black/20 border-r border-white/5 flex flex-col h-full w-[320px] shrink-0">
+ <section className={`bg-black/20 border-r border-white/5 flex flex-col h-full shrink-0 md:w-[320px] md:relative md:translate-x-0 ${effectsOpen ? 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[360px] translate-x-0' : 'fixed inset-y-0 left-0 z-40 w-[90%] max-w-[360px] -translate-x-full md:w-[320px]'}`}>
               <div className="p-4 flex flex-col gap-4 h-full">
+                <div className="md:hidden flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Effects Console</span>
+                  <button onClick={() => setEffectsOpen(false)} className="text-gray-500 hover:text-white"><span className="material-icons text-sm">close</span></button>
+                </div>
                 <EffectsPanel
                    activeEffect={targetEffect}
                   effectAmount={targetWet}
@@ -318,7 +342,7 @@ const App: React.FC = () => {
           )}
 
           <section className="flex-1 flex flex-col p-4 items-center justify-center overflow-auto min-h-0">
-            <div className="flex flex-col lg:flex-row gap-6 items-center">
+             <div className="flex flex-col md:flex-col lg:flex-row gap-6 items-center w-full">
              <Deck ref={deckARef} id="A" color="#D0BCFF" eq={deckAEq} effect={deckAEffect} effectWet={deckAEffectWet} effectIntensity={deckAEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('A', s)} onPlayerReady={p => setMasterPlayerA(p)} />
               <Mixer crossfader={crossfader} onCrossfaderChange={setCrossfader} crossfaderCurve={xFaderCurve} onCurveChange={setXFaderCurve} masterVolume={masterVolume} onMasterVolumeChange={setMasterVolume} deckAVolume={deckAVolume} onDeckAVolumeChange={setDeckAVolume} deckBVolume={deckBVolume} onDeckBVolumeChange={setDeckBVolume} deckAPlaying={deckAState?.playing || false} deckBPlaying={deckBState?.playing || false} deckAEq={deckAEq} deckBEq={deckBEq} onDeckAEqChange={(k, v) => setDeckAEq(p => ({...p, [k]: v}))} onDeckBEqChange={(k, v) => setDeckBEq(p => ({...p, [k]: v}))} />
                  <Deck ref={deckBRef} id="B" color="#F2B8B5" eq={deckBEq} effect={deckBEffect} effectWet={deckBEffectWet} effectIntensity={deckBEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('B', s)} onPlayerReady={p => setMasterPlayerB(p)} />
@@ -327,8 +351,8 @@ const App: React.FC = () => {
 
              {viewMode === 'LIBRARY' && (
             <>
-              <aside className={`bg-black/10 flex-none border-l border-white/5 flex flex-col transition-all duration-300 overflow-hidden ${queueOpen ? 'w-80 p-4' : 'w-0 p-0 border-none'}`}>
-                <div className={`h-full min-w-[280px] ${!queueOpen ? 'opacity-0 invisible' : 'opacity-100 visible transition-opacity'}`}>
+              <aside className={`bg-black/10 flex-none border-l border-white/5 flex flex-col transition-all duration-300 overflow-hidden md:relative md:translate-x-0 md:w-80 md:p-4 ${queueOpen ? 'fixed inset-y-0 right-0 z-40 w-[85%] max-w-[320px] p-4 translate-x-0' : 'fixed inset-y-0 right-0 z-40 w-[85%] max-w-[320px] p-0 translate-x-full md:w-0 md:p-0 md:border-none'}`}>
+                <div className={`h-full min-w-[260px] ${!queueOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 visible transition-opacity'}`}>
                   <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                     <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Queue Console</span>
                     <button onClick={() => setQueueOpen(false)} className="text-gray-500 hover:text-white"><span className="material-symbols-outlined text-sm">close</span></button>
@@ -346,8 +370,7 @@ const App: React.FC = () => {
               {!queueOpen && (
                 <button 
                   onClick={() => setQueueOpen(true)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black w-8 h-20 rounded-l-xl flex items-center justify-center z-50 shadow-xl hover:w-10 transition-all"
-                >
+                 className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black w-8 h-20 rounded-l-xl items-center justify-center z-50 shadow-xl hover:w-10 transition-all"
                   <span className="material-icons rotate-180">chevron_left</span>
                 </button>
               )}
@@ -393,7 +416,32 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        
+
+         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 border-t border-white/10 backdrop-blur-xl">
+          <div className="flex items-center justify-around py-2 px-3 text-xs">
+            <button onClick={() => { setViewMode('PERFORM'); setEffectsOpen(false); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'PERFORM' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
+              <span className="material-icons text-lg">speed</span>
+              <span className="uppercase tracking-widest text-[9px]">Perform</span>
+            </button>
+            <button onClick={() => { setViewMode('LIBRARY'); setLibraryOpen(true); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'LIBRARY' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
+              <span className="material-icons text-lg">grid_view</span>
+              <span className="uppercase tracking-widest text-[9px]">Library</span>
+            </button>
+            <button onClick={() => { setQueueOpen(true); setLibraryOpen(false); setEffectsOpen(false); }} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
+              <span className="material-icons text-lg">playlist_play</span>
+              <span className="uppercase tracking-widest text-[9px]">Queue</span>
+            </button>
+            <button onClick={() => { setViewMode('PERFORM'); setEffectsOpen(true); setLibraryOpen(false); }} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
+              <span className="material-icons text-lg">tune</span>
+              <span className="uppercase tracking-widest text-[9px]">Effects</span>
+            </button>
+            <button onClick={toggleTheme} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
+              <span className="material-icons text-lg">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+              <span className="uppercase tracking-widest text-[9px]">Theme</span>
+            </button>
+          </div>
+        </div>
+
         {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     </ErrorBoundary>
