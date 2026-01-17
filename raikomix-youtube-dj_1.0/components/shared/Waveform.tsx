@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 
 interface WaveformProps {
   isPlaying: boolean;
@@ -85,4 +85,4 @@ const Waveform: React.FC<WaveformProps> = ({ isPlaying, volume, color, playbackR
   );
 };
 
-export default Waveform;
+export default memo(Waveform);

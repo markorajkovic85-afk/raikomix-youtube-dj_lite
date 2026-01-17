@@ -3,6 +3,15 @@ export type DeckId = 'A' | 'B';
 export type CrossfaderCurve = 'SMOOTH' | 'CUT' | 'DIP';
 export type EffectType = 'ECHO' | 'DELAY' | 'REVERB' | 'FLANGER' | 'PHASER' | 'CRUSH';
 export type TrackSourceType = 'youtube' | 'local';
+export type FxTarget = 'A' | 'B' | 'AB';
+export type MobileTab = 'MIX' | 'LIBRARY' | 'FX';
+
+export const BREAKPOINTS = {
+  mobile: '(max-width: 567px)',
+  mobileLandscape: '(min-width: 568px) and (max-width: 767px)',
+  tablet: '(min-width: 768px) and (max-width: 1023px)',
+  desktop: '(min-width: 1024px)'
+} as const;
 
 export interface YouTubeSearchResult {
   videoId: string;
