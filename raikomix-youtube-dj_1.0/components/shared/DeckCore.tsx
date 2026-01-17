@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
-import { DeckId, EffectType, PlayerState, TrackSourceType } from '../types';
+import { DeckId, EffectType, PlayerState, TrackSourceType } from '../../types';
 import Waveform from './Waveform';
-import { detectBpmFromAudioBuffer, extractBPMFromTitle } from '../utils/bpmDetection';
-import { parseYouTubeTitle } from '../utils/youtubeApi';
+import { detectBpmFromAudioBuffer, extractBPMFromTitle } from '../../utils/bpmDetection';
+import { parseYouTubeTitle } from '../../utils/youtubeApi';
 
 interface DeckProps {
   id: DeckId;
@@ -729,7 +729,7 @@ const effectNodesRef = useRef<{
   };
 
   return (
-    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-4 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden min-w-[420px]">
+    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-4 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden w-full min-w-0 lg:min-w-[420px] [&_button]:min-h-[44px] [&_button]:min-w-[44px] [&_button]:px-2">
       <div className="absolute top-0 left-0 w-px h-px opacity-0 pointer-events-none overflow-hidden">
         <div id={containerId} />
       </div>
@@ -911,4 +911,4 @@ const effectNodesRef = useRef<{
   );
 });
 
-export default Deck;
+export default memo(Deck);
