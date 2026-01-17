@@ -73,6 +73,37 @@ export interface Playlist {
   color?: string;
 }
 
+// Mobile-specific types
+export type MobileTab = 'MIX' | 'LIBRARY' | 'FX';
+export type FxTarget = 'A' | 'B' | 'AB';
+
+// Responsive breakpoints
+export const BREAKPOINTS = {
+  mobile: '(max-width: 567px)',
+  mobileLandscape: '(min-width: 568px) and (max-width: 767px)',
+  tablet: '(min-width: 768px) and (max-width: 1023px)',
+  desktop: '(min-width: 1024px)'
+} as const;
+
+// Swipe configuration
+export interface SwipeConfig {
+  onSwipedLeft?: () => void;
+  onSwipedRight?: () => void;
+  onSwipedUp?: () => void;
+  onSwipedDown?: () => void;
+  delta?: number;
+  preventDefaultTouchmoveEvent?: boolean;
+  trackMouse?: boolean;
+}
+
+// Toast notification
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+export interface ToastState {
+  message: string;
+  type: ToastType;
+}
+
 declare global {
   interface Window {
     onYouTubeIframeAPIReady: () => void;
