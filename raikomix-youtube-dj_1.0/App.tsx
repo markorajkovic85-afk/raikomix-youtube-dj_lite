@@ -1,10 +1,13 @@
-import React, { Component, useState, useCallback, useEffect, useRef, Suspense, ReactNode } from 'react';
+import React, { Component, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import Deck, { DeckHandle } from './components/Deck';
 import Mixer from './components/Mixer';
 import LibraryPanel from './components/LibraryPanel';
 import QueuePanel from './components/QueuePanel';
 import SearchPanel from './components/SearchPanel';
 import Toast, { ToastType } from './components/Toast';
+import MobilePortraitLayout, { MobilePanelTab } from './components/layouts/MobilePortraitLayout';
+import MobileLandscapeLayout from './components/layouts/MobileLandscapeLayout';
+import TabletLayout from './components/layouts/TabletLayout';
 import { PlayerState, DeckId, CrossfaderCurve, QueueItem, LibraryTrack, YouTubeSearchResult, TrackSourceType, EffectType } from './types';
 import {
   loadLibrary,
@@ -17,6 +20,8 @@ import {
 import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import './styles/layout.css';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -65,9 +70,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 const App: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'PERFORM' | 'LIBRARY'>('LIBRARY');
-  const [libraryOpen, setLibraryOpen] = useState(true);
-  const [effectsOpen, setEffectsOpen] = useState(true);
   const [library, setLibrary] = useState<LibraryTrack[]>(() => loadLibrary());
   const [deckAState, setDeckAState] = useState<PlayerState | null>(null);
   const [deckBState, setDeckBState] = useState<PlayerState | null>(null);
@@ -91,23 +93,37 @@ const App: React.FC = () => {
 
   const [deckAEq, setDeckAEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
   const [deckBEq, setDeckBEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
-  const [mobilePanel, setMobilePanel] = useState<'LIBRARY' | 'QUEUE' | 'EFFECTS' | null>(null);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSheetTab, setMobileSheetTab] = useState<MobilePanelTab>('LIBRARY');
+  const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
-  const [desktopPanelTab, setDesktopPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
+  const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
+  const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
+  const [effectsCollapsed, setEffectsCollapsed] = useState(false);
 
   const deckARef = useRef<DeckHandle>(null);
   const deckBRef = useRef<DeckHandle>(null);
   const { theme, toggleTheme } = useTheme();
 
+  const isTablet = useMediaQuery('(min-width: 768px)');
+  const isLandscape = useMediaQuery('(min-width: 568px) and (max-width: 767px)');
+  const layoutMode: 'tablet' | 'landscape' | 'portrait' = isTablet ? 'tablet' : isLandscape ? 'landscape' : 'portrait';
+
   useEffect(() => { saveLibrary(library); }, [library]);
+
   useEffect(() => {
-    if (window.matchMedia('(max-width: 767px)').matches) {
-      setLibraryOpen(false);
-      setEffectsOpen(false);
-      setMobilePanel(null);
-      setMobileDeckFocus('A');
+    if (layoutMode === 'tablet') {
+      setMobileSheetOpen(false);
+      setEffectsDrawerOpen(false);
     }
-  }, []);
+    if (layoutMode === 'landscape') {
+      setMobileSheetExpanded(false);
+      if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
+    }
+    if (layoutMode === 'portrait') {
+      setEffectsDrawerOpen(false);
+    }
+  }, [layoutMode, mobileSheetTab]);
 
   const showNotification = (msg: string, type: ToastType = 'info') => setToast({ msg, type });
 
@@ -195,8 +211,7 @@ const App: React.FC = () => {
     : fxTarget === 'B'
       ? deckBState?.sourceType === 'youtube'
       : deckAState?.sourceType === 'youtube' || deckBState?.sourceType === 'youtube';
- const showMobileScrim = mobilePanel !== null;
-  
+
   const handleRemoveMultiple = useCallback((ids: string[]) => {
     setLibrary(prev => prev.filter(track => !ids.includes(track.id)));
     showNotification(`Removed ${ids.length} items from Library`);
@@ -218,321 +233,233 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [crossfader, xFaderCurve, masterVolume, deckAVolume, deckBVolume, masterPlayerA, masterPlayerB]);
 
+  const libraryPanel = (
+    <div className="flex flex-col gap-4 h-full min-h-0">
+      <SearchPanel 
+        onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
+        onAddToQueue={handleAddToQueue} 
+        onAddToLibrary={(result) => {
+          setLibrary(prev => {
+            const res = addTrackToLibrary(`https://www.youtube.com/watch?v=${result.videoId}`, prev);
+            if (res.success && res.track) {
+                showNotification('Added to Library', 'success');
+              const withTrack = [...prev, res.track];
+              return updateTrackMetadata(result.videoId, { title: result.title, author: result.channelTitle }, withTrack);
+            }
+            if (res.error) showNotification(res.error, 'error');
+            return prev;
+          });
+        }} 
+      />
+      <div className="flex-1 overflow-hidden border-t border-white/5 pt-4 min-h-0">
+        <LibraryPanel 
+          library={library} 
+          onAddSingle={url => {
+            setLibrary(prev => {
+              const res = addTrackToLibrary(url, prev);
+              if (res.success && res.track) {
+                showNotification('Added to Library', 'success');
+                return [...prev, res.track];
+              }
+              if (res.error) showNotification(res.error, 'error');
+              return prev;
+            });
+          }} 
+          onRemove={id => setLibrary(p => removeFromLibrary(id, p))} 
+          onRemoveMultiple={handleRemoveMultiple}
+          onLoadToDeck={(track, deck) => handleLoadVideo(track.videoId, track.url, deck, track.sourceType, track.title, track.author)} 
+          onAddToQueue={handleAddToQueue} 
+          onUpdateMetadata={(v, m) => { setLibrary(updateTrackMetadata(v, m, library)); showNotification('Metadata Saved'); }} 
+          onImportLibrary={setLibrary} 
+        />
+      </div> 
+    </div>
+  );
+
+  const queuePanel = (
+    <div className="flex-1 min-h-0 overflow-hidden">
+      <QueuePanel 
+        queue={queue} 
+        onLoadToDeck={(i, d) => { handleLoadVideo(i.videoId, i.url, d, i.sourceType || 'youtube', i.title, i.author); setQueue(p => p.filter(q => q.id !== i.id)); }} 
+        onRemove={id => setQueue(p => p.filter(i => i.id !== id))} 
+        onClear={() => setQueue([])} 
+        onReorder={() => {}} 
+      />
+    </div>
+  );
+
+  const effectsPanel = (
+    <EffectsPanel
+      activeEffect={targetEffect}
+      effectAmount={targetWet}
+      effectIntensity={targetIntensity}
+      onEffectToggle={(effect) => {
+        if (fxTarget === 'A') toggleEffect('A', effect);
+        else if (fxTarget === 'B') toggleEffect('B', effect);
+        else {
+          toggleEffect('A', effect);
+          toggleEffect('B', effect);
+        }
+      }}
+      onAmountChange={(amount) => {
+        if (fxTarget === 'A') setDeckAEffectWet(amount);
+        else if (fxTarget === 'B') setDeckBEffectWet(amount);
+        else {
+          setDeckAEffectWet(amount);
+          setDeckBEffectWet(amount);
+        }
+      }}
+      onIntensityChange={(amount) => {
+        if (fxTarget === 'A') setDeckAEffectIntensity(amount);
+        else if (fxTarget === 'B') setDeckBEffectIntensity(amount);
+        else {
+          setDeckAEffectIntensity(amount);
+          setDeckBEffectIntensity(amount);
+        }
+      }}
+      color={targetColor}
+      target={fxTarget}
+      onTargetChange={setFxTarget}
+      mixedEffect={isMixedEffect}
+      mixedAmount={isMixedWet}
+      mixedIntensity={isMixedIntensity}
+      showStreamingNotice={streamingNotice}
+    />
+  );
+
+  const mixerPanel = (
+    <Mixer
+      className="w-full max-w-[280px]"
+      crossfader={crossfader}
+      onCrossfaderChange={setCrossfader}
+      crossfaderCurve={xFaderCurve}
+      onCurveChange={setXFaderCurve}
+      masterVolume={masterVolume}
+      onMasterVolumeChange={setMasterVolume}
+      deckAVolume={deckAVolume}
+      onDeckAVolumeChange={setDeckAVolume}
+      deckBVolume={deckBVolume}
+      onDeckBVolumeChange={setDeckBVolume}
+      deckAPlaying={deckAState?.playing || false}
+      deckBPlaying={deckBState?.playing || false}
+      deckAEq={deckAEq}
+      deckBEq={deckBEq}
+      onDeckAEqChange={(k, v) => setDeckAEq(p => ({...p, [k]: v}))}
+      onDeckBEqChange={(k, v) => setDeckBEq(p => ({...p, [k]: v}))}
+    />
+  );
+
+  const utilityBar = (
+    <div className="utility-bar">
+      <button
+        type="button"
+        onClick={() => setShowHelp(true)}
+        className="utility-button touch-target"
+        aria-label="Show shortcuts"
+      >
+        <span className="material-icons text-base">help_outline</span>
+      </button>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="utility-button touch-target"
+        aria-label="Toggle theme"
+      >
+        <span className="material-icons text-base">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+      </button>
+    </div>
+  );
+
+  const deckA = (
+    <Deck
+      ref={deckARef}
+      id="A"
+      color="#D0BCFF"
+      eq={deckAEq}
+      effect={deckAEffect}
+      effectWet={deckAEffectWet}
+      effectIntensity={deckAEffectIntensity}
+      onStateUpdate={s => handleDeckStateUpdate('A', s)}
+      onPlayerReady={p => setMasterPlayerA(p)}
+    />
+  );
+
+  const deckB = (
+    <Deck
+      ref={deckBRef}
+      id="B"
+      color="#F2B8B5"
+      eq={deckBEq}
+      effect={deckBEffect}
+      effectWet={deckBEffectWet}
+      effectIntensity={deckBEffectIntensity}
+      onStateUpdate={s => handleDeckStateUpdate('B', s)}
+      onPlayerReady={p => setMasterPlayerB(p)}
+    />
+  );
+
+  const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
+
   return (
     <ErrorBoundary>
-       <div className="h-screen bg-[#1C1B1F] text-white flex flex-col md:flex-row overflow-hidden font-['Roboto']" data-theme={theme}>
-        <nav className="hidden md:flex w-16 bg-black/40 border-r border-white/5 flex-col items-center py-8 gap-10 shrink-0">
-          <button onClick={() => setViewMode('PERFORM')} className={`flex flex-col items-center gap-1 transition-all ${viewMode === 'PERFORM' ? 'text-[#D0BCFF] scale-110' : 'text-gray-600 hover:text-gray-400'}`}>
-            <span className="material-icons text-3xl">speed</span>
-            <span className="text-[7px] font-black uppercase tracking-widest">Perform</span>
-          </button>
-          <button onClick={() => setViewMode('LIBRARY')} className={`flex flex-col items-center gap-1 transition-all ${viewMode === 'LIBRARY' ? 'text-[#D0BCFF] scale-110' : 'text-gray-600 hover:text-gray-400'}`}>
-            <span className="material-icons text-3xl">grid_view</span>
-            <span className="text-[7px] font-black uppercase tracking-widest">Library</span>
-          </button>
-          <div className="flex flex-col gap-4 mt-auto">
-            <button onClick={() => setLibraryOpen(!libraryOpen)} className={`text-gray-600 hover:text-white transition-transform ${libraryOpen ? '' : 'rotate-180'}`} title="Toggle Library">
-              <span className="material-icons">chevron_left</span>
-            </button>
-            <button onClick={() => setEffectsOpen(!effectsOpen)} className={`text-gray-600 hover:text-white transition-transform ${effectsOpen ? '' : 'rotate-180'}`} title="Toggle Effects">
-              <span className="material-icons">tune</span>
-            </button>
-            <button onClick={toggleTheme} className="text-gray-600 hover:text-white"><span className="material-icons">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span></button>
-          </div>
-        </nav>
-
-        <div className="flex-1 flex overflow-hidden relative min-h-0 pb-20 md:pb-0">
-          {showMobileScrim && (
-            <button
-              className="md:hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-30"
-              onClick={() => setMobilePanel(null)}
-              aria-label="Close panels"
+      <div className="app-shell" data-theme={theme}>
+        <div className="layout-root">
+          {layoutMode === 'portrait' && (
+            <MobilePortraitLayout
+              deckA={deckA}
+              deckB={deckB}
+              mixer={mixerPanel}
+              deckFocus={mobileDeckFocus}
+              onDeckFocusChange={setMobileDeckFocus}
+              sheetOpen={mobileSheetOpen}
+              sheetTab={mobileSheetTab}
+              onSheetTabChange={setMobileSheetTab}
+              onSheetToggle={setMobileSheetOpen}
+              sheetExpanded={mobileSheetExpanded}
+              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
+              libraryPanel={libraryPanel}
+              queuePanel={queuePanel}
+              effectsPanel={effectsPanel}
+              utilityBar={utilityBar}
             />
           )}
-        <section className={`hidden md:flex bg-black/20 border-r border-white/5 overflow-hidden flex-col transition-all duration-300 flex-none h-full md:relative md:translate-x-0 md:w-[420px] ${libraryOpen ? 'md:w-[420px]' : 'md:w-0 md:border-none'}`}>
-          <div className={`p-4 flex flex-col gap-4 h-full min-w-[320px] min-h-0 ${!libraryOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 transition-opacity'}`}>
-            <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
-              <div className="flex gap-2">
-                {(['LIBRARY', 'QUEUE'] as const).map((panel) => (
-                  <button
-                    key={panel}
-                    onClick={() => setDesktopPanelTab(panel)}
-                    className={`h-11 px-4 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      desktopPanelTab === panel ? 'bg-[#D0BCFF] text-black' : 'text-gray-400'
-                    }`}
-                  >
-                    {panel === 'LIBRARY' ? 'Library' : 'Queue'}
-                  </button>
-                ))}
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">Tablet Dock</span>
-            </div>
-            {desktopPanelTab === 'LIBRARY' ? (
-              <div className="flex flex-col gap-4 h-full min-h-0">
-                <SearchPanel 
-                  onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
-                  onAddToQueue={handleAddToQueue} 
-                  onAddToLibrary={(result) => {
-                    setLibrary(prev => {
-                      const res = addTrackToLibrary(`https://www.youtube.com/watch?v=${result.videoId}`, prev);
-                      if (res.success && res.track) {
-                          showNotification('Added to Library', 'success');
-                        const withTrack = [...prev, res.track];
-                        return updateTrackMetadata(result.videoId, { title: result.title, author: result.channelTitle }, withTrack);
-                      }
-                      if (res.error) showNotification(res.error, 'error');
-                      return prev;
-                    });
-                  }} 
-                />
-                <div className="flex-1 overflow-hidden border-t border-white/5 pt-4 min-h-0">
-                  <LibraryPanel 
-                    library={library} 
-                    onAddSingle={url => {
-                      setLibrary(prev => {
-                        const res = addTrackToLibrary(url, prev);
-                        if (res.success && res.track) {
-                          showNotification('Added to Library', 'success');
-                          return [...prev, res.track];
-                        }
-                        if (res.error) showNotification(res.error, 'error');
-                        return prev;
-                      });
-                    }} 
-                    onRemove={id => setLibrary(p => removeFromLibrary(id, p))} 
-                    onRemoveMultiple={handleRemoveMultiple}
-                    onLoadToDeck={(track, deck) => handleLoadVideo(track.videoId, track.url, deck, track.sourceType, track.title, track.author)} 
-                    onAddToQueue={handleAddToQueue} 
-                    onUpdateMetadata={(v, m) => { setLibrary(updateTrackMetadata(v, m, library)); showNotification('Metadata Saved'); }} 
-                    onImportLibrary={setLibrary} 
-                  />
-                </div> 
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <QueuePanel 
-                  queue={queue} 
-                  onLoadToDeck={(i, d) => { handleLoadVideo(i.videoId, i.url, d, i.sourceType || 'youtube', i.title, i.author); setQueue(p => p.filter(q => q.id !== i.id)); }} 
-                  onRemove={id => setQueue(p => p.filter(i => i.id !== id))} 
-                  onClear={() => setQueue([])} 
-                  onReorder={() => {}} 
-                />
-              </div>
-            )}
-          </div>
-        </section>
 
-         <section className="flex-1 flex flex-col p-3 min-[568px]:p-2 md:p-4 items-center justify-center overflow-hidden max-[567px]:overflow-y-auto min-h-0" id="main-content">
-            {/* Responsive performance layout: portrait = deck switcher, landscape/tablet = dual decks with compact mixer. */}
-            <div className="w-full flex flex-col gap-3 min-[568px]:gap-3 min-[568px]:h-full">
-              <div className="min-[568px]:hidden flex items-center justify-between bg-black/40 border border-white/10 rounded-full px-3 py-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Deck Focus</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setMobileDeckFocus('A')}
-                    className={`h-11 px-4 rounded-full text-[10px] font-black uppercase tracking-widest ${mobileDeckFocus === 'A' ? 'bg-[#D0BCFF] text-black' : 'text-gray-400'}`}
-                    aria-pressed={mobileDeckFocus === 'A'}
-                  >
-                    Deck A
-                  </button>
-                  <button
-                    onClick={() => setMobileDeckFocus('B')}
-                    className={`h-11 px-4 rounded-full text-[10px] font-black uppercase tracking-widest ${mobileDeckFocus === 'B' ? 'bg-[#F2B8B5] text-black' : 'text-gray-400'}`}
-                    aria-pressed={mobileDeckFocus === 'B'}
-                  >
-                    Deck B
-                  </button>
-                </div>
-              </div>
-              {/* Mobile landscape keeps both decks visible while locking height to avoid scrolling. */}
-              <div className="flex flex-col min-[568px]:flex-row gap-3 items-center justify-center w-full min-[568px]:items-stretch min-[568px]:h-full min-[568px]:max-h-[calc(100vh-140px)]">
-                <div className={`w-full min-[568px]:flex-1 min-w-[200px] ${mobileDeckFocus === 'A' ? 'flex' : 'hidden'} min-[568px]:flex`}>
-                  <Deck ref={deckARef} id="A" color="#D0BCFF" eq={deckAEq} effect={deckAEffect} effectWet={deckAEffectWet} effectIntensity={deckAEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('A', s)} onPlayerReady={p => setMasterPlayerA(p)} />
-                </div>
-                <div className="w-full min-[568px]:w-[200px] min-[568px]:max-w-[220px] min-[568px]:self-stretch">
-                  <div className="h-full min-[568px]:rounded-2xl min-[568px]:border min-[568px]:border-white/10 min-[568px]:bg-black/30 min-[568px]:px-2 min-[568px]:py-3">
-                    <Mixer crossfader={crossfader} onCrossfaderChange={setCrossfader} crossfaderCurve={xFaderCurve} onCurveChange={setXFaderCurve} masterVolume={masterVolume} onMasterVolumeChange={setMasterVolume} deckAVolume={deckAVolume} onDeckAVolumeChange={setDeckAVolume} deckBVolume={deckBVolume} onDeckBVolumeChange={setDeckBVolume} deckAPlaying={deckAState?.playing || false} deckBPlaying={deckBState?.playing || false} deckAEq={deckAEq} deckBEq={deckBEq} onDeckAEqChange={(k, v) => setDeckAEq(p => ({...p, [k]: v}))} onDeckBEqChange={(k, v) => setDeckBEq(p => ({...p, [k]: v}))} />
-                  </div>
-                </div>
-                <div className={`w-full min-[568px]:flex-1 min-w-[200px] ${mobileDeckFocus === 'B' ? 'flex' : 'hidden'} min-[568px]:flex`}>
-                  <Deck ref={deckBRef} id="B" color="#F2B8B5" eq={deckBEq} effect={deckBEffect} effectWet={deckBEffectWet} effectIntensity={deckBEffectIntensity} onStateUpdate={s => handleDeckStateUpdate('B', s)} onPlayerReady={p => setMasterPlayerB(p)} />
-                </div>
-              </div>
-            </div>
-          </section>
+          {layoutMode === 'landscape' && (
+            <MobileLandscapeLayout
+              deckA={deckA}
+              deckB={deckB}
+              mixer={mixerPanel}
+              sheetOpen={mobileSheetOpen}
+              sheetTab={landscapeSheetTab}
+              onSheetTabChange={(tab) => setMobileSheetTab(tab)}
+              onSheetToggle={setMobileSheetOpen}
+              sheetExpanded={mobileSheetExpanded}
+              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
+              libraryPanel={libraryPanel}
+              queuePanel={queuePanel}
+              effectsPanel={effectsPanel}
+              effectsOpen={effectsDrawerOpen}
+              onEffectsToggle={setEffectsDrawerOpen}
+              utilityBar={utilityBar}
+            />
+          )}
 
-          <aside className={`hidden md:flex bg-black/20 border-l border-white/5 flex-col transition-all duration-300 overflow-hidden md:relative md:translate-x-0 md:w-[320px] ${effectsOpen ? 'md:w-[320px] md:p-4' : 'md:w-0 md:p-0 md:border-none'}`}>
-            <div className={`h-full min-w-[260px] ${!effectsOpen ? 'opacity-0 md:opacity-100' : 'opacity-100 visible transition-opacity'}`}>
-              <EffectsPanel
-                activeEffect={targetEffect}
-                effectAmount={targetWet}
-                effectIntensity={targetIntensity}
-                onEffectToggle={(effect) => {
-                  if (fxTarget === 'A') toggleEffect('A', effect);
-                  else if (fxTarget === 'B') toggleEffect('B', effect);
-                  else {
-                    toggleEffect('A', effect);
-                    toggleEffect('B', effect);
-                  }
-                }}
-                onAmountChange={(amount) => {
-                  if (fxTarget === 'A') setDeckAEffectWet(amount);
-                  else if (fxTarget === 'B') setDeckBEffectWet(amount);
-                  else {
-                    setDeckAEffectWet(amount);
-                    setDeckBEffectWet(amount);
-                  }
-                }}
-                onIntensityChange={(amount) => {
-                  if (fxTarget === 'A') setDeckAEffectIntensity(amount);
-                  else if (fxTarget === 'B') setDeckBEffectIntensity(amount);
-                  else {
-                    setDeckAEffectIntensity(amount);
-                    setDeckBEffectIntensity(amount);
-                  }
-                }}
-                color={targetColor}
-                target={fxTarget}
-                onTargetChange={setFxTarget}
-                mixedEffect={isMixedEffect}
-                mixedAmount={isMixedWet}
-                mixedIntensity={isMixedIntensity}
-                showStreamingNotice={streamingNotice}
-              />
-            </div>
-          </aside>
-
-          {!effectsOpen && (
-            <button 
-              onClick={() => setEffectsOpen(true)}
-              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black w-8 h-20 rounded-l-xl items-center justify-center z-50 shadow-xl hover:w-10 transition-all"
-            >
-              <span className="material-icons rotate-180">chevron_left</span>
-            </button>
+          {layoutMode === 'tablet' && (
+            <TabletLayout
+              deckA={deckA}
+              deckB={deckB}
+              mixer={mixerPanel}
+              libraryPanel={libraryPanel}
+              queuePanel={queuePanel}
+              effectsPanel={effectsPanel}
+              panelTab={tabletPanelTab}
+              onPanelTabChange={setTabletPanelTab}
+              effectsCollapsed={effectsCollapsed}
+              onEffectsCollapseToggle={() => setEffectsCollapsed(prev => !prev)}
+              utilityBar={utilityBar}
+            />
           )}
         </div>
-
-        {/* Mobile bottom sheet keeps decks visible while surfacing Library, Queue, and Effects. */}
-        {mobilePanel && (
-          <div className="md:hidden fixed inset-x-0 bottom-16 z-40 px-3 pb-3">
-            <div className="bg-[#1C1B1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh] min-h-[260px]">
-              <div className="flex items-center justify-between gap-2 p-3 border-b border-white/10 bg-black/40">
-                <div className="flex gap-2">
-                  {(['LIBRARY', 'QUEUE', 'EFFECTS'] as const).map((panel) => (
-                    <button
-                      key={panel}
-                      onClick={() => setMobilePanel(panel)}
-                      className={`h-11 px-4 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        mobilePanel === panel ? 'bg-[#D0BCFF] text-black' : 'text-gray-400'
-                      }`}
-                      aria-pressed={mobilePanel === panel}
-                    >
-                      {panel === 'LIBRARY' ? 'Library' : panel === 'QUEUE' ? 'Queue' : 'Effects'}
-                    </button>
-                  ))}
-                </div>
-                <button onClick={() => setMobilePanel(null)} className="text-gray-400 hover:text-white">
-                  <span className="material-icons text-sm">close</span>
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden p-3">
-                {mobilePanel === 'LIBRARY' && (
-                  <div className="flex flex-col gap-3 h-full min-h-0">
-                    <SearchPanel 
-                      onLoadToDeck={(vid, url, deck, title, author) => handleLoadVideo(vid, url, deck, 'youtube', title, author)} 
-                      onAddToQueue={handleAddToQueue} 
-                      onAddToLibrary={(result) => {
-                        setLibrary(prev => {
-                          const res = addTrackToLibrary(`https://www.youtube.com/watch?v=${result.videoId}`, prev);
-                          if (res.success && res.track) {
-                              showNotification('Added to Library', 'success');
-                            const withTrack = [...prev, res.track];
-                            return updateTrackMetadata(result.videoId, { title: result.title, author: result.channelTitle }, withTrack);
-                          }
-                          if (res.error) showNotification(res.error, 'error');
-                          return prev;
-                        });
-                      }} 
-                    />
-                    <div className="flex-1 min-h-0 overflow-hidden">
-                      <LibraryPanel 
-                        library={library} 
-                        onAddSingle={url => {
-                          setLibrary(prev => {
-                            const res = addTrackToLibrary(url, prev);
-                            if (res.success && res.track) {
-                              showNotification('Added to Library', 'success');
-                              return [...prev, res.track];
-                            }
-                            if (res.error) showNotification(res.error, 'error');
-                            return prev;
-                          });
-                        }} 
-                        onRemove={id => setLibrary(p => removeFromLibrary(id, p))} 
-                        onRemoveMultiple={handleRemoveMultiple}
-                        onLoadToDeck={(track, deck) => handleLoadVideo(track.videoId, track.url, deck, track.sourceType, track.title, track.author)} 
-                        onAddToQueue={handleAddToQueue} 
-                        onUpdateMetadata={(v, m) => { setLibrary(updateTrackMetadata(v, m, library)); showNotification('Metadata Saved'); }} 
-                        onImportLibrary={setLibrary} 
-                      />
-                    </div>
-                  </div>
-                )}
-                {mobilePanel === 'QUEUE' && (
-                  <div className="h-full">
-                    <QueuePanel 
-                      queue={queue} 
-                      onLoadToDeck={(i, d) => { handleLoadVideo(i.videoId, i.url, d, i.sourceType || 'youtube', i.title, i.author); setQueue(p => p.filter(q => q.id !== i.id)); }} 
-                      onRemove={id => setQueue(p => p.filter(i => i.id !== id))} 
-                      onClear={() => setQueue([])} 
-                      onReorder={() => {}} 
-                    />
-                  </div>
-                )}
-                {mobilePanel === 'EFFECTS' && (
-                  <div className="h-full overflow-y-auto">
-                    <EffectsPanel
-                      activeEffect={targetEffect}
-                      effectAmount={targetWet}
-                      effectIntensity={targetIntensity}
-                      onEffectToggle={(effect) => {
-                        if (fxTarget === 'A') toggleEffect('A', effect);
-                        else if (fxTarget === 'B') toggleEffect('B', effect);
-                        else {
-                          toggleEffect('A', effect);
-                          toggleEffect('B', effect);
-                        }
-                      }}
-                      onAmountChange={(amount) => {
-                        if (fxTarget === 'A') setDeckAEffectWet(amount);
-                        else if (fxTarget === 'B') setDeckBEffectWet(amount);
-                        else {
-                          setDeckAEffectWet(amount);
-                          setDeckBEffectWet(amount);
-                        }
-                      }}
-                      onIntensityChange={(amount) => {
-                        if (fxTarget === 'A') setDeckAEffectIntensity(amount);
-                        else if (fxTarget === 'B') setDeckBEffectIntensity(amount);
-                        else {
-                          setDeckAEffectIntensity(amount);
-                          setDeckBEffectIntensity(amount);
-                        }
-                      }}
-                      color={targetColor}
-                      target={fxTarget}
-                      onTargetChange={setFxTarget}
-                      mixedEffect={isMixedEffect}
-                      mixedAmount={isMixedWet}
-                      mixedIntensity={isMixedIntensity}
-                      showStreamingNotice={streamingNotice}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {showHelp && (
           <div className="fixed inset-0 z-[4000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowHelp(false)}>
@@ -572,30 +499,6 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-
-         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 border-t border-white/10 backdrop-blur-xl">
-          <div className="flex items-center justify-around py-2 px-3 text-xs">
-            <button onClick={() => { setViewMode('PERFORM'); setMobilePanel(null); setEffectsOpen(false); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${viewMode === 'PERFORM' && !mobilePanel ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>              <span className="material-icons text-lg">speed</span>
-              <span className="uppercase tracking-widest text-[9px]">Perform</span>
-            </button>
-            <button onClick={() => { setViewMode('LIBRARY'); setMobilePanel('LIBRARY'); setLibraryOpen(true); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'LIBRARY' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
-              <span className="material-icons text-lg">grid_view</span>
-              <span className="uppercase tracking-widest text-[9px]">Library</span>
-            </button>
-            <button onClick={() => { setMobilePanel('QUEUE'); setViewMode('LIBRARY'); setLibraryOpen(false); setEffectsOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'QUEUE' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
-              <span className="material-icons text-lg">playlist_play</span>
-              <span className="uppercase tracking-widest text-[9px]">Queue</span>
-            </button>
-            <button onClick={() => { setViewMode('PERFORM'); setMobilePanel('EFFECTS'); setEffectsOpen(true); setLibraryOpen(false); }} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${mobilePanel === 'EFFECTS' ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>
-              <span className="material-icons text-lg">tune</span>
-              <span className="uppercase tracking-widest text-[9px]">Effects</span>
-            </button>
-            <button onClick={toggleTheme} className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-gray-400">
-              <span className="material-icons text-lg">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
-              <span className="uppercase tracking-widest text-[9px]">Theme</span>
-            </button>
-          </div>
-        </div>
 
         {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       </div>
