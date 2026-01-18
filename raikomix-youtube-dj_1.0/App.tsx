@@ -6,7 +6,6 @@ import QueuePanel from './components/QueuePanel';
 import SearchPanel from './components/SearchPanel';
 import Toast, { ToastType } from './components/Toast';
 import MobilePortraitLayout, { MobilePanelTab } from './components/layouts/MobilePortraitLayout';
-import MobileLandscapeLayout from './components/layouts/MobileLandscapeLayout';
 import TabletLayout from './components/layouts/TabletLayout';
 import CompactMixer from './components/CompactMixer';
 import { PlayerState, DeckId, CrossfaderCurve, QueueItem, LibraryTrack, YouTubeSearchResult, TrackSourceType, EffectType } from './types';
@@ -99,58 +98,23 @@ const App: React.FC = () => {
   const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
   const [mobileNavTab, setMobileNavTab] = useState<'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER'>('DECK_A');
   const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
-  const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
 
   const deckARef = useRef<DeckHandle>(null);
   const deckBRef = useRef<DeckHandle>(null);
   const { theme, toggleTheme } = useTheme();
 
-  const [layoutMode, setLayoutMode] = useState<'tablet' | 'landscape' | 'portrait'>(() => {
-    if (typeof window === 'undefined') return 'portrait';
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    if (width >= 1024) return 'tablet';
-    if (width > height) return 'landscape';
-    return 'portrait';
-  });
-
-  useEffect(() => {
-    const updateLayout = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      if (width >= 1024) {
-        setLayoutMode('tablet');
-      } else if (width > height) {
-        setLayoutMode('landscape');
-      } else {
-        setLayoutMode('portrait');
-      }
-    };
-
-    updateLayout();
-    window.addEventListener('resize', updateLayout);
-    window.addEventListener('orientationchange', updateLayout);
-    return () => {
-      window.removeEventListener('resize', updateLayout);
-      window.removeEventListener('orientationchange', updateLayout);
-    };
-  }, []);
+  const isTablet = useMediaQuery('(min-width: 768px)');
+  const layoutMode: 'tablet' | 'portrait' = isTablet ? 'tablet' : 'portrait';
 
   useEffect(() => { saveLibrary(library); }, [library]);
 
   useEffect(() => {
     if (layoutMode === 'tablet') {
       setMobileSheetOpen(false);
-      setEffectsDrawerOpen(false);
-    }
-    if (layoutMode === 'landscape') {
-      setMobileSheetExpanded(false);
-      if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
     if (layoutMode === 'portrait') {
       setMobileSheetExpanded(false);
-      setEffectsDrawerOpen(false);
       if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
   }, [layoutMode, mobileSheetTab]);
@@ -463,8 +427,6 @@ const App: React.FC = () => {
     />
   );
 
-  const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
-
   return (
     <ErrorBoundary>
       <div className="app-shell" data-theme={theme}>
@@ -489,26 +451,6 @@ const App: React.FC = () => {
               effectsPanel={effectsPanel}
               utilityBar={utilityBar}
               compactMixer={compactMixer}
-            />
-          )}
-
-          {layoutMode === 'landscape' && (
-            <MobileLandscapeLayout
-              deckA={deckA}
-              deckB={deckB}
-              mixer={mixerPanel}
-              sheetOpen={mobileSheetOpen}
-              sheetTab={landscapeSheetTab}
-              onSheetTabChange={(tab) => setMobileSheetTab(tab)}
-              onSheetToggle={setMobileSheetOpen}
-              sheetExpanded={mobileSheetExpanded}
-              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
-              libraryPanel={libraryPanel}
-              queuePanel={queuePanel}
-              effectsPanel={effectsPanel}
-              effectsOpen={effectsDrawerOpen}
-              onEffectsToggle={setEffectsDrawerOpen}
-              utilityBar={utilityBar}
             />
           )}
 
