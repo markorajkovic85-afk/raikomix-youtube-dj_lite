@@ -453,7 +453,10 @@ const App: React.FC = () => {
     setMobileNavTab(tab);
     if (tab === 'DECK_A') setMobileDeckFocus('A');
     if (tab === 'DECK_B') setMobileDeckFocus('B');
-    if (tab === 'LIBRARY') setMobileSheetOpen(true);
+    if (tab === 'LIBRARY') {
+      setMobileSheetOpen(true);
+      setMobileSheetExpanded(true);
+    };
     if (tab !== 'LIBRARY') setMobileSheetOpen(false);
   };
 
