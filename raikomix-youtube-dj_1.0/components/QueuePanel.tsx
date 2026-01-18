@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { QueueItem, DeckId } from '../types';
 import { exportQueue } from '../utils/queueStorage';
@@ -35,7 +34,7 @@ const MarqueeText: React.FC<{ text: string; className: string }> = ({ text, clas
   );
 };
 
-const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, onClear }) => {
+const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, onClear, onReorder }) => {
   return (
     <div className="flex flex-col h-full gap-4 elevation-2">
       <div className="flex items-center justify-between px-2">
@@ -69,7 +68,27 @@ const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, 
 
         {queue.map((item, index) => (
           <div key={item.id} className="m3-card group p-3 flex gap-4 items-center bg-[#1C1B1F]/40 hover:bg-[#2B2930] motion-standard border-dashed elevation-1 hover:elevation-2 overflow-hidden">
-            <span className="text-[10px] font-mono text-gray-600 w-4">{index + 1}</span>
+            <div className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onReorder(index, index - 1)}
+                disabled={index === 0}
+                className="w-6 h-6 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
+                aria-label={`Move ${item.title} up`}
+              >
+                <span className="material-symbols-outlined text-sm">keyboard_arrow_up</span>
+              </button>
+              <span className="text-[10px] font-mono text-gray-600 w-4 text-center">{index + 1}</span>
+              <button
+                type="button"
+                onClick={() => onReorder(index, index + 1)}
+                disabled={index === queue.length - 1}
+                className="w-6 h-6 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
+                aria-label={`Move ${item.title} down`}
+              >
+                <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+              </button>
+            </div>
             <div className="w-12 h-12 bg-black rounded overflow-hidden flex-shrink-0 elevation-1">
               <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
             </div>
@@ -87,18 +106,21 @@ const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, 
               <button 
                 onClick={() => onLoadToDeck(item, 'A')}
                 className="px-2 py-1 rounded bg-[#D0BCFF]/10 text-[#D0BCFF] text-[10px] font-black motion-emphasized elevation-1 hover:elevation-2"
+                aria-label={`Load ${item.title} to Deck A`}
               >
                 A
               </button>
               <button 
                 onClick={() => onLoadToDeck(item, 'B')}
                 className="px-2 py-1 rounded bg-[#F2B8B5]/10 text-[#F2B8B5] text-[10px] font-black motion-emphasized elevation-1 hover:elevation-2"
+                aria-label={`Load ${item.title} to Deck B`}
               >
                 B
               </button>
               <button 
                 onClick={() => onRemove(item.id)}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 motion-standard"
+                aria-label={`Remove ${item.title} from queue`}
               >
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
