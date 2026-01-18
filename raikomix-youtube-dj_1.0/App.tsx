@@ -1,4 +1,4 @@
-import React, { Component, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Deck, { DeckHandle } from './components/Deck';
 import Mixer from './components/Mixer';
 import LibraryPanel from './components/LibraryPanel';
@@ -8,6 +8,7 @@ import Toast, { ToastType } from './components/Toast';
 import MobilePortraitLayout, { MobilePanelTab } from './components/layouts/MobilePortraitLayout';
 import MobileLandscapeLayout from './components/layouts/MobileLandscapeLayout';
 import TabletLayout from './components/layouts/TabletLayout';
+import CompactMixer from './components/CompactMixer';
 import { PlayerState, DeckId, CrossfaderCurve, QueueItem, LibraryTrack, YouTubeSearchResult, TrackSourceType, EffectType } from './types';
 import {
   loadLibrary,
@@ -20,54 +21,7 @@ import {
 import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
-import { useMediaQuery } from './hooks/useMediaQuery';
 import './styles/layout.css';
-
-interface ErrorBoundaryProps {
-  children?: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-// FIX: Explicitly using Component from named imports and providing constructor to ensure props are correctly initialized and recognized by the compiler
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): ErrorBoundaryState { 
-    return { hasError: true }; 
-  }
-
-  public componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, info);
-  }
-
-  public render() {
-    const { hasError } = this.state;
-    // Destructuring children from this.props; typing is now correctly inherited from the Component base class
-    const { children } = this.props;
-
-    if (hasError) return (
-      <div className="h-screen bg-black flex items-center justify-center text-[#D0BCFF] p-10 text-center">
-        <div className="max-w-md">
-          <h1 className="text-4xl font-black mb-4 uppercase tracking-tighter">System Critical</h1>
-          <p className="mb-6 opacity-60">The DJ Engine encountered a memory fault. Re-initializing the console.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-10 py-4 bg-[#D0BCFF] text-black font-black rounded-full hover:bg-white transition-all shadow-[0_0_20px_rgba(208,188,255,0.4)]"
-          >
-            REBOOT CONSOLE
-          </button>
-        </div>
-      </div>
-    );
-    return children;
-  }
-}
 
 const App: React.FC = () => {
   const [library, setLibrary] = useState<LibraryTrack[]>(() => loadLibrary());
@@ -97,6 +51,7 @@ const App: React.FC = () => {
   const [mobileSheetTab, setMobileSheetTab] = useState<MobilePanelTab>('LIBRARY');
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
+  const [mobileNavTab, setMobileNavTab] = useState<'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER'>('DECK_A');
   const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
   const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
@@ -105,9 +60,36 @@ const App: React.FC = () => {
   const deckBRef = useRef<DeckHandle>(null);
   const { theme, toggleTheme } = useTheme();
 
-  const isTablet = useMediaQuery('(min-width: 768px)');
-  const isLandscape = useMediaQuery('(min-width: 568px) and (max-width: 767px)');
-  const layoutMode: 'tablet' | 'landscape' | 'portrait' = isTablet ? 'tablet' : isLandscape ? 'landscape' : 'portrait';
+  const [layoutMode, setLayoutMode] = useState<'tablet' | 'landscape' | 'portrait'>(() => {
+    if (typeof window === 'undefined') return 'portrait';
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    if (width >= 1024) return 'tablet';
+    if (width > height) return 'landscape';
+    return 'portrait';
+  });
+
+  useEffect(() => {
+    const updateLayout = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      if (width >= 1024) {
+        setLayoutMode('tablet');
+      } else if (width > height) {
+        setLayoutMode('landscape');
+      } else {
+        setLayoutMode('portrait');
+      }
+    };
+
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    window.addEventListener('orientationchange', updateLayout);
+    return () => {
+      window.removeEventListener('resize', updateLayout);
+      window.removeEventListener('orientationchange', updateLayout);
+    };
+  }, []);
 
   useEffect(() => { saveLibrary(library); }, [library]);
 
@@ -121,9 +103,22 @@ const App: React.FC = () => {
       if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
     if (layoutMode === 'portrait') {
+      setMobileSheetExpanded(false);
       setEffectsDrawerOpen(false);
+      if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
   }, [layoutMode, mobileSheetTab]);
+
+  useEffect(() => {
+    if (layoutMode !== 'portrait') return;
+    if (mobileNavTab === 'LIBRARY') {
+      setMobileSheetOpen(true);
+    } else {
+      setMobileSheetOpen(false);
+    }
+    if (mobileNavTab === 'DECK_A') setMobileDeckFocus('A');
+    if (mobileNavTab === 'DECK_B') setMobileDeckFocus('B');
+  }, [layoutMode, mobileNavTab]);
 
   const showNotification = (msg: string, type: ToastType = 'info') => setToast({ msg, type });
 
@@ -329,7 +324,7 @@ const App: React.FC = () => {
 
   const mixerPanel = (
     <Mixer
-      className="w-full max-w-[280px]"
+      className="w-full max-w-[360px]"
       crossfader={crossfader}
       onCrossfaderChange={setCrossfader}
       crossfaderCurve={xFaderCurve}
@@ -354,7 +349,7 @@ const App: React.FC = () => {
       <button
         type="button"
         onClick={() => setShowHelp(true)}
-        className="utility-button touch-target"
+        className="utility-button m3-touch touch-target"
         aria-label="Show shortcuts"
       >
         <span className="material-icons text-base">help_outline</span>
@@ -362,7 +357,7 @@ const App: React.FC = () => {
       <button
         type="button"
         onClick={toggleTheme}
-        className="utility-button touch-target"
+        className="utility-button m3-touch touch-target"
         aria-label="Toggle theme"
       >
         <span className="material-icons text-base">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
@@ -398,111 +393,136 @@ const App: React.FC = () => {
     />
   );
 
+  const handleMobileNavTabChange = (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => {
+    setMobileNavTab(tab);
+    if (tab === 'DECK_A') setMobileDeckFocus('A');
+    if (tab === 'DECK_B') setMobileDeckFocus('B');
+    if (tab === 'LIBRARY') setMobileSheetOpen(true);
+    if (tab !== 'LIBRARY') setMobileSheetOpen(false);
+  };
+
+  const handleMobileSheetToggle = (open: boolean) => {
+    setMobileSheetOpen(open);
+    if (!open && mobileNavTab === 'LIBRARY') {
+      setMobileNavTab(mobileDeckFocus === 'B' ? 'DECK_B' : 'DECK_A');
+    }
+  };
+
+  const compactMixer = (
+    <CompactMixer
+      crossfader={crossfader}
+      onCrossfaderChange={setCrossfader}
+      masterVolume={masterVolume}
+      onMasterVolumeChange={setMasterVolume}
+    />
+  );
+
   const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
 
   return (
-    <ErrorBoundary>
-      <div className="app-shell" data-theme={theme}>
-        <div className="layout-root">
-          {layoutMode === 'portrait' && (
-            <MobilePortraitLayout
-              deckA={deckA}
-              deckB={deckB}
-              mixer={mixerPanel}
-              deckFocus={mobileDeckFocus}
-              onDeckFocusChange={setMobileDeckFocus}
-              sheetOpen={mobileSheetOpen}
-              sheetTab={mobileSheetTab}
-              onSheetTabChange={setMobileSheetTab}
-              onSheetToggle={setMobileSheetOpen}
-              sheetExpanded={mobileSheetExpanded}
-              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
-              libraryPanel={libraryPanel}
-              queuePanel={queuePanel}
-              effectsPanel={effectsPanel}
-              utilityBar={utilityBar}
-            />
-          )}
-
-          {layoutMode === 'landscape' && (
-            <MobileLandscapeLayout
-              deckA={deckA}
-              deckB={deckB}
-              mixer={mixerPanel}
-              sheetOpen={mobileSheetOpen}
-              sheetTab={landscapeSheetTab}
-              onSheetTabChange={(tab) => setMobileSheetTab(tab)}
-              onSheetToggle={setMobileSheetOpen}
-              sheetExpanded={mobileSheetExpanded}
-              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
-              libraryPanel={libraryPanel}
-              queuePanel={queuePanel}
-              effectsPanel={effectsPanel}
-              effectsOpen={effectsDrawerOpen}
-              onEffectsToggle={setEffectsDrawerOpen}
-              utilityBar={utilityBar}
-            />
-          )}
-
-          {layoutMode === 'tablet' && (
-            <TabletLayout
-              deckA={deckA}
-              deckB={deckB}
-              mixer={mixerPanel}
-              libraryPanel={libraryPanel}
-              queuePanel={queuePanel}
-              effectsPanel={effectsPanel}
-              panelTab={tabletPanelTab}
-              onPanelTabChange={setTabletPanelTab}
-              effectsCollapsed={effectsCollapsed}
-              onEffectsCollapseToggle={() => setEffectsCollapsed(prev => !prev)}
-              utilityBar={utilityBar}
-            />
-          )}
-        </div>
-
-        {showHelp && (
-          <div className="fixed inset-0 z-[4000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowHelp(false)}>
-            <div className="m3-card bg-[#1D1B20] p-12 max-w-2xl w-full border-[#D0BCFF]/30 shadow-[0_0_100px_rgba(208,188,255,0.15)]">
-               <div className="flex justify-between items-center mb-10">
-                 <h2 className="text-3xl font-black text-[#D0BCFF] tracking-[0.3em] uppercase">Shortcut Engine</h2>
-                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">Pro Mode Active</span>
-               </div>
-               <div className="grid grid-cols-2 gap-x-12 gap-y-6 text-sm">
-                  <div>
-                    <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Deck A (Left)</h3>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PLAY/PAUSE / CUE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">Q / 1-4</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">LOOP / MUTE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">S / M</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PITCH +/-</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">[ / ]</span></div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Deck B (Right)</h3>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PLAY/PAUSE / CUE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">P / 7-0</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">LOOP / MUTE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">K / N</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PITCH +/-</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">; / '</span></div>
-                    </div>
-                  </div>
-                  <div className="col-span-2 pt-4">
-                    <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Global Mixer</h3>
-                    <div className="grid grid-cols-2 gap-x-12 gap-y-4">
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">CROSSFADER</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">← / →</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">RESET EQs</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">R</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">CENTER X-FADER</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">Space</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">KNOB FINE-TUNE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">Wheel</span></div>
-                    </div>
-                  </div>
-               </div>
-               <button onClick={() => setShowHelp(false)} className="w-full mt-12 py-5 bg-[#D0BCFF] text-black font-black rounded-2xl tracking-[0.5em] hover:bg-white transition-all">RESUME PERFORMANCE</button>
-            </div>
-          </div>
+    <div className="app-shell" data-theme={theme}>
+      <div className="layout-root">
+        {layoutMode === 'portrait' && (
+          <MobilePortraitLayout
+            deckA={deckA}
+            deckB={deckB}
+            mixer={mixerPanel}
+            deckFocus={mobileDeckFocus}
+            onDeckFocusChange={setMobileDeckFocus}
+            navTab={mobileNavTab}
+            onNavTabChange={handleMobileNavTabChange}
+            sheetOpen={mobileSheetOpen}
+            sheetTab={mobileSheetTab}
+            onSheetTabChange={setMobileSheetTab}
+            onSheetToggle={handleMobileSheetToggle}
+            sheetExpanded={mobileSheetExpanded}
+            onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
+            libraryPanel={libraryPanel}
+            queuePanel={queuePanel}
+            effectsPanel={effectsPanel}
+            utilityBar={utilityBar}
+            compactMixer={compactMixer}
+          />
         )}
 
-        {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+        {layoutMode === 'landscape' && (
+          <MobileLandscapeLayout
+            deckA={deckA}
+            deckB={deckB}
+            mixer={mixerPanel}
+            sheetOpen={mobileSheetOpen}
+            sheetTab={landscapeSheetTab}
+            onSheetTabChange={(tab) => setMobileSheetTab(tab)}
+            onSheetToggle={setMobileSheetOpen}
+            sheetExpanded={mobileSheetExpanded}
+            onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
+            libraryPanel={libraryPanel}
+            queuePanel={queuePanel}
+            effectsPanel={effectsPanel}
+            effectsOpen={effectsDrawerOpen}
+            onEffectsToggle={setEffectsDrawerOpen}
+            utilityBar={utilityBar}
+          />
+        )}
+
+        {layoutMode === 'tablet' && (
+          <TabletLayout
+            deckA={deckA}
+            deckB={deckB}
+            mixer={mixerPanel}
+            libraryPanel={libraryPanel}
+            queuePanel={queuePanel}
+            effectsPanel={effectsPanel}
+            panelTab={tabletPanelTab}
+            onPanelTabChange={setTabletPanelTab}
+            effectsCollapsed={effectsCollapsed}
+            onEffectsCollapseToggle={() => setEffectsCollapsed(prev => !prev)}
+            utilityBar={utilityBar}
+          />
+        )}
       </div>
-    </ErrorBoundary>
+
+      {showHelp && (
+        <div className="fixed inset-0 z-[4000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowHelp(false)}>
+          <div className="m3-card bg-[#1D1B20] p-12 max-w-2xl w-full border-[#D0BCFF]/30 shadow-[0_0_100px_rgba(208,188,255,0.15)]">
+             <div className="flex justify-between items-center mb-10">
+               <h2 className="text-3xl font-black text-[#D0BCFF] tracking-[0.3em] uppercase">Shortcut Engine</h2>
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">Pro Mode Active</span>
+             </div>
+             <div className="grid grid-cols-2 gap-x-12 gap-y-6 text-sm">
+                <div>
+                  <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Deck A (Left)</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PLAY/PAUSE / CUE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">Q / 1-4</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">LOOP / MUTE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">S / M</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PITCH +/-</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#D0BCFF]">[ / ]</span></div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Deck B (Right)</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PLAY/PAUSE / CUE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">P / 7-0</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">LOOP / MUTE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">K / N</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">PITCH +/-</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-[#F2B8B5]">; / '</span></div>
+                  </div>
+                </div>
+                <div className="col-span-2 pt-4">
+                  <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Global Mixer</h3>
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">CROSSFADER</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">← / →</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">RESET EQs</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">R</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">CENTER X-FADER</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">Space</span></div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-400">KNOB FINE-TUNE</span><span className="bg-white/10 px-3 py-1 rounded-lg mono text-white">Wheel</span></div>
+                  </div>
+                </div>
+             </div>
+             <button onClick={() => setShowHelp(false)} className="w-full mt-12 py-5 bg-[#D0BCFF] text-black font-black rounded-2xl tracking-[0.5em] hover:bg-white transition-all">RESUME PERFORMANCE</button>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
   );
 };
 
