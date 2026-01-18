@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useRef } from 'react';
 
 export type MobilePanelTab = 'LIBRARY' | 'QUEUE' | 'EFFECTS';
 
@@ -8,6 +8,8 @@ interface MobilePortraitLayoutProps {
   mixer: ReactNode;
   deckFocus: 'A' | 'B';
   onDeckFocusChange: (deck: 'A' | 'B') => void;
+  navTab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER';
+  onNavTabChange: (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => void;
   sheetOpen: boolean;
   sheetTab: MobilePanelTab;
   onSheetTabChange: (tab: MobilePanelTab) => void;
@@ -18,6 +20,7 @@ interface MobilePortraitLayoutProps {
   queuePanel: ReactNode;
   effectsPanel: ReactNode;
   utilityBar?: ReactNode;
+  compactMixer?: ReactNode;
 }
 
 const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
@@ -26,6 +29,8 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   mixer,
   deckFocus,
   onDeckFocusChange,
+  navTab,
+  onNavTabChange,
   sheetOpen,
   sheetTab,
   onSheetTabChange,
@@ -35,70 +40,109 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   libraryPanel,
   queuePanel,
   effectsPanel,
-  utilityBar
+  utilityBar,
+  compactMixer
 }) => {
+  const swipeStartX = useRef<number | null>(null);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    swipeStartX.current = event.clientX;
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (swipeStartX.current === null) return;
+    const deltaX = event.clientX - swipeStartX.current;
+    if (Math.abs(deltaX) > 60) {
+      const nextDeck = deltaX < 0 ? 'B' : 'A';
+      onDeckFocusChange(nextDeck);
+      onNavTabChange(nextDeck === 'A' ? 'DECK_A' : 'DECK_B');
+    }
+    swipeStartX.current = null;
+  };
+
   return (
     <div className="mobile-layout" id="main-content">
-      {/* Mobile portrait: top deck switcher, active deck stack, mixer strip, bottom sheet tabs. */}
-      <header className="mobile-header">
-        <div className="deck-switcher" role="tablist" aria-label="Deck switcher">
-          <button
-            type="button"
-            onClick={() => onDeckFocusChange('A')}
-            className={`deck-switcher__button touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
-            aria-pressed={deckFocus === 'A'}
-          >
-            Deck A
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeckFocusChange('B')}
-            className={`deck-switcher__button deck-switcher__button--b touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
-            aria-pressed={deckFocus === 'B'}
-          >
-            Deck B
-          </button>
+      <header className="mobile-top-bar">
+        <div>
+          <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-[0.3em]">
+            RaikoMix
+          </p>
+          <p className="text-base font-semibold">Mobile DJ Console</p>
         </div>
-        <div className="mobile-actions">
-          <button
-            type="button"
-            onClick={() => onSheetToggle(!sheetOpen)}
-            className="panel-trigger touch-target"
-            aria-expanded={sheetOpen}
-          >
-            <span className="material-icons text-base">library_music</span>
-            Panels
-          </button>
-          {utilityBar}
-        </div>
+        <div className="utility-bar">{utilityBar}</div>
       </header>
 
-      <div className="deck-stack">
-        <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
-          {deckA}
-        </div>
-        <div className={`deck-slot ${deckFocus === 'B' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'B'}>
-          {deckB}
-        </div>
+      <div className="mobile-main">
+        {(navTab === 'DECK_A' || navTab === 'DECK_B' || navTab === 'LIBRARY') && (
+          <>
+            <div className="deck-tabs" role="tablist" aria-label="Deck switcher">
+              <button
+                type="button"
+                onClick={() => {
+                  onDeckFocusChange('A');
+                  onNavTabChange('DECK_A');
+                }}
+                className={`deck-tab m3-touch touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
+                aria-pressed={deckFocus === 'A'}
+              >
+                Deck A
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeckFocusChange('B');
+                  onNavTabChange('DECK_B');
+                }}
+                className={`deck-tab m3-touch touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
+                aria-pressed={deckFocus === 'B'}
+              >
+                Deck B
+              </button>
+            </div>
+
+            <div
+              className="deck-stack"
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+            >
+              <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
+                {deckA}
+              </div>
+              <div className={`deck-slot ${deckFocus === 'B' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'B'}>
+                {deckB}
+              </div>
+            </div>
+          </>
+        )}
+
+        {navTab === 'MIXER' && (
+          <section className="space-y-3" aria-label="Mixer">
+            {mixer}
+            <details className="collapsible-panel">
+              <summary>Effects</summary>
+              <div className="collapsible-content">{effectsPanel}</div>
+            </details>
+          </section>
+        )}
       </div>
 
-      <section className="mixer-strip" aria-label="Mixer">
-        {mixer}
-      </section>
-
       {sheetOpen && (
-        <div className="panel-sheet elevation-4" data-expanded={sheetExpanded} role="dialog" aria-label="Performance panels">
+        <div className="panel-sheet elevation-4" data-expanded={sheetExpanded} role="dialog" aria-label="Library and queue">
+          <div className="flex justify-center pt-3">
+            <div className="panel-sheet__handle" aria-hidden="true" />
+          </div>
           <div className="panel-sheet__header">
             <div className="panel-sheet__tabs">
-              {(['LIBRARY', 'QUEUE', 'EFFECTS'] as const).map((tab) => (
+              {(['LIBRARY', 'QUEUE'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => onSheetTabChange(tab)}
-                  className={`panel-tab touch-target ${sheetTab === tab ? 'is-active' : ''}`}
+                  className={`panel-tab m3-touch touch-target ${sheetTab === tab ? 'is-active' : ''}`}
                   aria-pressed={sheetTab === tab}
                 >
-                  {tab === 'LIBRARY' ? 'Library' : tab === 'QUEUE' ? 'Queue' : 'Effects'}
+                  {tab === 'LIBRARY' ? 'Library' : 'Queue'}
                 </button>
               ))}
             </div>
@@ -106,7 +150,7 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
               <button
                 type="button"
                 onClick={onSheetExpandedToggle}
-                className="utility-button touch-target"
+                className="utility-button m3-touch touch-target"
                 aria-label={sheetExpanded ? 'Collapse panel' : 'Expand panel'}
               >
                 <span className="material-icons text-base">{sheetExpanded ? 'expand_more' : 'expand_less'}</span>
@@ -114,7 +158,7 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
               <button
                 type="button"
                 onClick={() => onSheetToggle(false)}
-                className="utility-button touch-target"
+                className="utility-button m3-touch touch-target"
                 aria-label="Close panel"
               >
                 <span className="material-icons text-base">close</span>
@@ -128,12 +172,31 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
             <div className={`panel-sheet__panel ${sheetTab === 'QUEUE' ? '' : 'is-hidden'}`}>
               {queuePanel}
             </div>
-            <div className={`panel-sheet__panel ${sheetTab === 'EFFECTS' ? '' : 'is-hidden'}`}>
-              {effectsPanel}
-            </div>
           </div>
         </div>
       )}
+
+      {compactMixer && <div className="mobile-mixer-bar">{compactMixer}</div>}
+
+      <nav className="mobile-bottom-nav" aria-label="Primary">
+        {([
+          { id: 'LIBRARY', label: 'Library', icon: 'library_music' },
+          { id: 'DECK_A', label: 'Deck A', icon: 'album' },
+          { id: 'DECK_B', label: 'Deck B', icon: 'graphic_eq' },
+          { id: 'MIXER', label: 'Mixer', icon: 'tune' }
+        ] as const).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavTabChange(item.id)}
+            className={`bottom-nav__item m3-touch touch-target ${navTab === item.id ? 'is-active' : ''}`}
+            aria-pressed={navTab === item.id}
+          >
+            <span className="material-icons bottom-nav__icon">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };
