@@ -238,6 +238,58 @@ button > * {
   z-index: 50;
 }
 
+quick-mix-fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: var(--md-sys-elevation-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 55;
+}
+
+.quick-mix-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  align-items: end;
+}
+
+.quick-mix-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+}
+
+.quick-mix-modal {
+  position: relative;
+  margin: 0 16px calc(96px + env(safe-area-inset-bottom));
+  padding: 16px;
+  border-radius: 22px;
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--md-sys-elevation-4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-mix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .bottom-nav__item {
   display: inline-flex;
   flex-direction: column;
