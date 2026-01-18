@@ -176,7 +176,7 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
         </div>
       )}
 
-       {compactMixer && !sheetOpen && <div className="mobile-mixer-bar">{compactMixer}</div>}
+ {compactMixer && navTab === 'MIXER' && !sheetOpen && <div className="mobile-mixer-bar">{compactMixer}</div>}
 
       <nav className="mobile-bottom-nav" aria-label="Primary">
         {([
