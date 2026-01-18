@@ -6,8 +6,8 @@ import QueuePanel from './components/QueuePanel';
 import SearchPanel from './components/SearchPanel';
 import Toast, { ToastType } from './components/Toast';
 import MobilePortraitLayout, { MobilePanelTab } from './components/layouts/MobilePortraitLayout';
-import MobileLandscapeLayout from './components/layouts/MobileLandscapeLayout';
 import TabletLayout from './components/layouts/TabletLayout';
+import CompactMixer from './components/CompactMixer';
 import { PlayerState, DeckId, CrossfaderCurve, QueueItem, LibraryTrack, YouTubeSearchResult, TrackSourceType, EffectType } from './types';
 import {
   loadLibrary,
@@ -97,8 +97,8 @@ const App: React.FC = () => {
   const [mobileSheetTab, setMobileSheetTab] = useState<MobilePanelTab>('LIBRARY');
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
+  const [mobileNavTab, setMobileNavTab] = useState<'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER'>('DECK_A');
   const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
-  const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
 
   const deckARef = useRef<DeckHandle>(null);
@@ -106,24 +106,30 @@ const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const isTablet = useMediaQuery('(min-width: 768px)');
-  const isLandscape = useMediaQuery('(min-width: 568px) and (max-width: 767px)');
-  const layoutMode: 'tablet' | 'landscape' | 'portrait' = isTablet ? 'tablet' : isLandscape ? 'landscape' : 'portrait';
+  const layoutMode: 'tablet' | 'portrait' = isTablet ? 'tablet' : 'portrait';
 
   useEffect(() => { saveLibrary(library); }, [library]);
 
   useEffect(() => {
     if (layoutMode === 'tablet') {
       setMobileSheetOpen(false);
-      setEffectsDrawerOpen(false);
     }
-    if (layoutMode === 'landscape') {
+    if (layoutMode === 'portrait') {
       setMobileSheetExpanded(false);
       if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
-    if (layoutMode === 'portrait') {
-      setEffectsDrawerOpen(false);
-    }
   }, [layoutMode, mobileSheetTab]);
+
+  useEffect(() => {
+    if (layoutMode !== 'portrait') return;
+    if (mobileNavTab === 'LIBRARY') {
+      setMobileSheetOpen(true);
+    } else {
+      setMobileSheetOpen(false);
+    }
+    if (mobileNavTab === 'DECK_A') setMobileDeckFocus('A');
+    if (mobileNavTab === 'DECK_B') setMobileDeckFocus('B');
+  }, [layoutMode, mobileNavTab]);
 
   const showNotification = (msg: string, type: ToastType = 'info') => setToast({ msg, type });
 
@@ -329,7 +335,7 @@ const App: React.FC = () => {
 
   const mixerPanel = (
     <Mixer
-      className="w-full max-w-[280px]"
+      className="w-full max-w-[360px]"
       crossfader={crossfader}
       onCrossfaderChange={setCrossfader}
       crossfaderCurve={xFaderCurve}
@@ -354,7 +360,7 @@ const App: React.FC = () => {
       <button
         type="button"
         onClick={() => setShowHelp(true)}
-        className="utility-button touch-target"
+        className="utility-button m3-touch touch-target"
         aria-label="Show shortcuts"
       >
         <span className="material-icons text-base">help_outline</span>
@@ -362,7 +368,7 @@ const App: React.FC = () => {
       <button
         type="button"
         onClick={toggleTheme}
-        className="utility-button touch-target"
+        className="utility-button m3-touch touch-target"
         aria-label="Toggle theme"
       >
         <span className="material-icons text-base">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
@@ -398,7 +404,29 @@ const App: React.FC = () => {
     />
   );
 
-  const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
+  const handleMobileNavTabChange = (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => {
+    setMobileNavTab(tab);
+    if (tab === 'DECK_A') setMobileDeckFocus('A');
+    if (tab === 'DECK_B') setMobileDeckFocus('B');
+    if (tab === 'LIBRARY') setMobileSheetOpen(true);
+    if (tab !== 'LIBRARY') setMobileSheetOpen(false);
+  };
+
+  const handleMobileSheetToggle = (open: boolean) => {
+    setMobileSheetOpen(open);
+    if (!open && mobileNavTab === 'LIBRARY') {
+      setMobileNavTab(mobileDeckFocus === 'B' ? 'DECK_B' : 'DECK_A');
+    }
+  };
+
+  const compactMixer = (
+    <CompactMixer
+      crossfader={crossfader}
+      onCrossfaderChange={setCrossfader}
+      masterVolume={masterVolume}
+      onMasterVolumeChange={setMasterVolume}
+    />
+  );
 
   return (
     <ErrorBoundary>
@@ -411,36 +439,19 @@ const App: React.FC = () => {
               mixer={mixerPanel}
               deckFocus={mobileDeckFocus}
               onDeckFocusChange={setMobileDeckFocus}
+              navTab={mobileNavTab}
+              onNavTabChange={handleMobileNavTabChange}
               sheetOpen={mobileSheetOpen}
               sheetTab={mobileSheetTab}
               onSheetTabChange={setMobileSheetTab}
-              onSheetToggle={setMobileSheetOpen}
+              onSheetToggle={handleMobileSheetToggle}
               sheetExpanded={mobileSheetExpanded}
               onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
               libraryPanel={libraryPanel}
               queuePanel={queuePanel}
               effectsPanel={effectsPanel}
               utilityBar={utilityBar}
-            />
-          )}
-
-          {layoutMode === 'landscape' && (
-            <MobileLandscapeLayout
-              deckA={deckA}
-              deckB={deckB}
-              mixer={mixerPanel}
-              sheetOpen={mobileSheetOpen}
-              sheetTab={landscapeSheetTab}
-              onSheetTabChange={(tab) => setMobileSheetTab(tab)}
-              onSheetToggle={setMobileSheetOpen}
-              sheetExpanded={mobileSheetExpanded}
-              onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
-              libraryPanel={libraryPanel}
-              queuePanel={queuePanel}
-              effectsPanel={effectsPanel}
-              effectsOpen={effectsDrawerOpen}
-              onEffectsToggle={setEffectsDrawerOpen}
-              utilityBar={utilityBar}
+              compactMixer={compactMixer}
             />
           )}
 
