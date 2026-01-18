@@ -1,8 +1,8 @@
 /**
  * UX rationale: Smaller circular performance pads laid out in a 2x2 grid ensure clear separation
- * and prevent overlap on narrow phones while keeping labels readable. The play button sits centered
- * within the waveform block to reduce vertical stacking and keep the entire deck visible without
- * scrolling, with the horizontal pitch strip preserved above.
+ * and prevent overlap on narrow phones while keeping labels readable. The play button now anchors
+ * on the left of the waveform block with reserved padding so it stays visible without stacking,
+ * keeping the entire deck visible without scrolling while preserving the horizontal pitch strip.
  */
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -869,21 +869,25 @@ const effectNodesRef = useRef<{
           </div>
         </div>
 
-        <div className="relative flex items-center justify-center">
-          <Waveform 
-            isPlaying={state.playing} 
-            volume={state.volume * (0.5 + state.eqLow * 0.5)} 
-            color={color} 
-            playbackRate={state.playbackRate} 
-          />
-          <button
-            onClick={togglePlay}
-            disabled={!state.isReady}
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/80 border-2 flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_16px_rgba(208,188,255,0.35)]' : 'border-white/20'}`}
-            aria-label={state.playing ? 'Pause' : 'Play'}
-          >
-            <span className="material-icons text-[22px] text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
-          </button>
+        <div className="relative flex items-center">
+          <div className="absolute inset-y-0 left-0 w-14 flex items-center justify-center">
+            <button
+              onClick={togglePlay}
+              disabled={!state.isReady}
+              className={`w-11 h-11 rounded-full bg-black/80 border-2 flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_16px_rgba(208,188,255,0.35)]' : 'border-white/20'}`}
+              aria-label={state.playing ? 'Pause' : 'Play'}
+            >
+              <span className="material-icons text-[22px] text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
+            </button>
+          </div>
+          <div className="w-full pl-14">
+            <Waveform 
+              isPlaying={state.playing} 
+              volume={state.volume * (0.5 + state.eqLow * 0.5)} 
+              color={color} 
+              playbackRate={state.playbackRate} 
+            />
+          </div>
         </div>
 
         <div className="space-y-1">
