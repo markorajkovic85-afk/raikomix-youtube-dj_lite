@@ -1,8 +1,8 @@
 /**
- * UX rationale: The deck layout is condensed into tighter horizontal rows so mobile portrait screens
- * prioritize waveform, transport, and metadata without tall, single-purpose vertical controls.
- * The pitch/tempo control is now a compact horizontal slider grouped with BPM/key and tap, while
- * performance pads are arranged in dense grids to prevent overlap and maintain tappable targets.
+ * UX rationale: Circular performance pads with clear gaps read as discrete tap targets and avoid
+ * visual crowding on small phones, while keeping cue/loop grids compact. The play button now sits
+ * centered over the waveform to reclaim vertical space and keep the whole deck visible without
+ * scrolling in portrait mode, with the horizontal pitch strip preserved above.
  */
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -474,177 +474,123 @@ const effectNodesRef = useRef<{
             properties: {
               bpm: { type: Type.NUMBER },
               key: { type: Type.STRING }
-            }
+            },
+            required: ["bpm", "key"]
           }
         }
       });
-      
-      if (response.text) {
-        const json = JSON.parse(response.text);
-        if (json.bpm) {
-          setState(s => ({ ...s, bpm: Math.round(json.bpm) }));
-        }
-        if (json.key) {
-          setState(s => ({ ...s, musicalKey: json.key }));
-        }
-      }
-    } catch (err) {
-      console.warn("AI metadata error", err);
+      const data = JSON.parse(response.text || '{}');
+      if (data.bpm) setState(s => ({ ...s, bpm: data.bpm, musicalKey: data.key || '-' }));
+    } catch (e) {
+      console.error("AI Analysis failed:", e);
+    } finally {
+      setIsScanning(false);
     }
-    setIsScanning(false);
   };
 
-  const analyzeLocalBpm = async (url: string) => {
+    const analyzeLocalBpm = async (url: string) => {
     try {
       setIsScanning(true);
-      
       const response = await fetch(url);
       const arrayBuffer = await response.arrayBuffer();
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      
-      const bpm = await detectBpmFromAudioBuffer(audioBuffer);
-      
+      const existingContext = audioCtxRef.current;
+      const tempContext = existingContext ?? new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioBuffer = await tempContext.decodeAudioData(arrayBuffer.slice(0));
+      const bpm = detectBpmFromAudioBuffer(audioBuffer);
       if (bpm) {
         setState(s => ({ ...s, bpm }));
       }
-      
-      audioCtx.close();
-      setIsScanning(false);
-    } catch (err) {
-      console.error("Local BPM detection error", err);
+      if (!existingContext) {
+        await tempContext.close();
+      }
+    } catch (e) {
+      console.warn('Local BPM detection failed:', e);
+    } finally {
       setIsScanning(false);
     }
   };
-
   const updateMetadata = useCallback((player: any) => {
-    if (player) {
-      const videoData = player.getVideoData();
-      const parsed = parseYouTubeTitle(videoData.title);
-      
-      if (parsed) {
-        setState(s => ({
-          ...s,
-          title: parsed.title || videoData.title,
-          author: parsed.artist || videoData.author,
-          isReady: true,
-          duration: player.getDuration()
-        }));
-      } else {
-        setState(s => ({
-          ...s,
-          title: videoData.title || 'Unknown Track',
-          author: videoData.author || 'Unknown Artist',
-          isReady: true,
-          duration: player.getDuration()
-        }));
-      }
-      
-      // Attempt to detect BPM from title first
-      const bpm = extractBPMFromTitle(videoData.title);
-      if (bpm) {
-        setState(s => ({ ...s, bpm }));
-        setIsScanning(false);
-      } else {
-        // Use AI metadata detection
-        analyzeTrackMetadata(videoData.title, videoData.author);
+    if (!player) return;
+    const data = player.getVideoData ? player.getVideoData() : {};
+    const { title, author } = parseYouTubeTitle(data.title || 'Unknown Track', data.author || 'YouTube Stream');
+    const initialBpm = extractBPMFromTitle(data.title || '') || 120;
+    
+    setState(s => ({ 
+      ...s, 
+      isReady: true, 
+      duration: player.getDuration() || 0, 
+      title, 
+      author, 
+      bpm: initialBpm 
+    }));
+    
+    analyzeTrackMetadata(title, author);
+  }, []);
+
+  const handleToggleLoop = useCallback((beats: number = 4) => {
+    const beatDuration = 60 / state.bpm;
+    const loopDuration = beats * beatDuration;
+    const isThisLoopActive = state.loopActive && Math.abs((state.loopEnd - state.loopStart) - loopDuration) < 0.1;
+    setState(s => ({
+      ...s,
+      loopActive: !isThisLoopActive,
+      loopStart: !isThisLoopActive ? state.currentTime : 0,
+      loopEnd: !isThisLoopActive ? state.currentTime + loopDuration : 0
+    }));
+  }, [state.bpm, state.loopActive, state.loopStart, state.loopEnd, state.currentTime]);
+
+  const handleHotCue = useCallback((index: number, clear: boolean = false) => {
+    if (clear) {
+      const newCues = [...state.hotCues];
+      newCues[index] = null;
+      setState(s => ({ ...s, hotCues: newCues }));
+      return;
+    }
+
+    const cue = state.hotCues[index];
+    if (cue === null) {
+      const newCues = [...state.hotCues];
+      newCues[index] = state.currentTime;
+      setState(s => ({ ...s, hotCues: newCues }));
+    } else {
+      if (state.sourceType === 'youtube') {
+        playerRef.current?.seekTo(cue, true);
+        playerRef.current?.playVideo();
+      } else if (localAudioRef.current) {
+        localAudioRef.current.currentTime = cue;
+        localAudioRef.current.play();
       }
     }
-  }, [analyzeTrackMetadata]);
+  }, [state.hotCues, state.currentTime, state.sourceType]);
+
+  const seekToTimelinePosition = useCallback((clientX: number, target: HTMLDivElement) => {
+    const rect = target.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const time = pct * state.duration;
+    if (state.sourceType === 'youtube') playerRef.current?.seekTo(time, true);
+    else if (localAudioRef.current) localAudioRef.current.currentTime = time;
+  }, [state.duration, state.sourceType]);
 
   const handleTimelinePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!event.currentTarget) return;
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = (event.clientX - rect.left) / rect.width;
-    const newTime = ratio * state.duration;
-    
-    if (state.sourceType === 'youtube') {
-      playerRef.current?.seekTo(newTime, true);
-    } else if (localAudioRef.current) {
-      localAudioRef.current.currentTime = newTime;
-    }
-    
-    event.currentTarget.setPointerCapture(event.pointerId);
+    if (!state.isReady) return;
+    const target = event.currentTarget;
     timelinePointerIdRef.current = event.pointerId;
     timelineDraggingRef.current = true;
-  }, [state.duration, state.sourceType]);
+    target.setPointerCapture(event.pointerId);
+    seekToTimelinePosition(event.clientX, target);
+  }, [seekToTimelinePosition, state.isReady]);
 
   const handleTimelinePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!timelineDraggingRef.current) return;
-    if (timelinePointerIdRef.current !== event.pointerId) return;
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = Math.min(Math.max(0, (event.clientX - rect.left) / rect.width), 1);
-    const newTime = ratio * state.duration;
-    
-    if (state.sourceType === 'youtube') {
-      playerRef.current?.seekTo(newTime, true);
-    } else if (localAudioRef.current) {
-      localAudioRef.current.currentTime = newTime;
-    }
-  }, [state.duration, state.sourceType]);
+    if (!timelineDraggingRef.current || timelinePointerIdRef.current !== event.pointerId) return;
+    seekToTimelinePosition(event.clientX, event.currentTarget);
+  }, [seekToTimelinePosition]);
 
   const handleTimelinePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (timelinePointerIdRef.current !== event.pointerId) return;
-    
     timelineDraggingRef.current = false;
     timelinePointerIdRef.current = null;
-    
     event.currentTarget.releasePointerCapture(event.pointerId);
   }, []);
-
-  const handleHotCue = useCallback((index: number, clear = false) => {
-    if (!state.isReady) return;
-    
-    const currentTime = state.currentTime;
-    
-    setState(s => {
-      const newCues = [...s.hotCues];
-      
-      // Long press clears hot cue
-      if (clear) {
-        newCues[index] = null;
-        return { ...s, hotCues: newCues };
-      }
-      
-      // If hot cue exists, jump to it
-      if (newCues[index] !== null) {
-        if (state.sourceType === 'youtube') {
-          playerRef.current?.seekTo(newCues[index] || 0, true);
-        } else if (localAudioRef.current) {
-          localAudioRef.current.currentTime = newCues[index] || 0;
-        }
-      } else {
-        // Set new hot cue
-        newCues[index] = currentTime;
-      }
-      
-      return { ...s, hotCues: newCues };
-    });
-  }, [state.currentTime, state.isReady, state.sourceType]);
-
-  const handleToggleLoop = useCallback((beats = 4) => {
-    if (!state.isReady) return;
-    
-    setState(s => {
-      if (s.loopActive) {
-        return { ...s, loopActive: false };
-      }
-      
-      // Calculate beat length in seconds
-      const beatLength = 60 / s.bpm;
-      const loopLength = beats * beatLength;
-      
-      return { 
-        ...s, 
-        loopActive: true, 
-        loopStart: s.currentTime,
-        loopEnd: s.currentTime + loopLength
-      };
-    });
-  }, [state.isReady]);
 
   const handleHotCuePointerDown = useCallback((index: number) => {
     hotCueLongPressRef.current[index] = false;
@@ -841,13 +787,13 @@ const effectNodesRef = useRef<{
   };
 
   return (
-    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-3 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden w-full min-w-0">
+    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-2.5 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden w-full min-w-0">
       <div className="absolute top-0 left-0 w-px h-px opacity-0 pointer-events-none overflow-hidden">
         <div id={containerId} />
       </div>
       <audio ref={localAudioRef} style={{ display: 'none' }} onPlay={() => setState(s => ({...s, playing: true}))} onPause={() => setState(s => ({...s, playing: false}))} />
       
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {/* Main Deck Controls Area */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
@@ -879,7 +825,7 @@ const effectNodesRef = useRef<{
 
           <div 
             ref={tempoContainerRef}
-            className="flex items-center gap-3 bg-black/40 rounded-xl border border-white/10 px-3 py-2 select-none touch-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30 m3-touch"
+            className="flex items-center gap-3 bg-black/40 rounded-xl border border-white/10 px-3 py-1.5 select-none touch-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30 m3-touch"
             onDoubleClick={() => updatePlaybackRate(1.0)}
             onPointerDown={handleTempoPointerDown}
             onPointerMove={handleTempoPointerMove}
@@ -923,22 +869,22 @@ const effectNodesRef = useRef<{
           </div>
         </div>
 
-        <div className="flex items-center justify-center py-1">
+        <div className="relative">
+          <Waveform 
+            isPlaying={state.playing} 
+            volume={state.volume * (0.5 + state.eqLow * 0.5)} 
+            color={color} 
+            playbackRate={state.playbackRate} 
+          />
           <button
             onClick={togglePlay}
             disabled={!state.isReady}
-            className={`w-16 h-16 rounded-full bg-black border-[3px] flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_30px_rgba(208,188,255,0.2)]' : 'border-white/10'}`}
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/80 border-2 flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_20px_rgba(208,188,255,0.35)]' : 'border-white/20'}`}
+            aria-label={state.playing ? 'Pause' : 'Play'}
           >
-            <span className="material-icons text-3xl text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
+            <span className="material-icons text-2xl text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
           </button>
         </div>
-
-        <Waveform 
-          isPlaying={state.playing} 
-          volume={state.volume * (0.5 + state.eqLow * 0.5)} 
-          color={color} 
-          playbackRate={state.playbackRate} 
-        />
 
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-black uppercase text-gray-600 px-1">
@@ -955,7 +901,7 @@ const effectNodesRef = useRef<{
             </button>
           </div>
           <div 
-            className="h-8 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10 touch-target touch-none"
+            className="h-7 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10 touch-target touch-none"
             onPointerDown={handleTimelinePointerDown}
             onPointerMove={handleTimelinePointerMove}
             onPointerUp={handleTimelinePointerUp}
@@ -978,7 +924,7 @@ const effectNodesRef = useRef<{
               <div className="flex justify-between items-center px-1">
                  <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Hot Cues</div>
               </div>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-4 gap-2">
                 {[0, 1, 2, 3].map((i) => (
                   <button 
                     key={i} 
@@ -987,7 +933,7 @@ const effectNodesRef = useRef<{
                     onPointerUp={() => handleHotCuePointerUp(i)}
                     onPointerCancel={() => handleHotCuePointerUp(i)}
                     onPointerLeave={() => handleHotCuePointerUp(i)}
-                    className={`h-9 text-xs rounded-lg font-black border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/5 text-gray-200 hover:border-white/20'}`} 
+                    className={`h-10 w-10 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/10 text-gray-200 hover:border-white/30'}`} 
                     style={state.hotCues[i] !== null ? { backgroundColor: CUE_COLORS[i], borderColor: CUE_COLORS[i], boxShadow: `0 0 10px ${CUE_COLORS[i]}44` } : {}}
                   >
                     {i + 1}
@@ -997,9 +943,9 @@ const effectNodesRef = useRef<{
             </div>
             <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-2">
               <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest px-1">Loops</div>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-4 gap-2">
                 {[2, 4, 8, 16].map((b) => (
-                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-9 text-xs rounded-lg font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/5 text-gray-200 hover:text-white hover:border-white/20'}`}>{b}</button>
+                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-10 w-10 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/10 text-gray-200 hover:text-white hover:border-white/30'}`}>{b}</button>
                 ))}
               </div>
             </div>
