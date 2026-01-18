@@ -1,8 +1,8 @@
 /**
- * UX rationale: Circular performance pads with clear gaps read as discrete tap targets and avoid
- * visual crowding on small phones, while keeping cue/loop grids compact. The play button now sits
- * centered over the waveform to reclaim vertical space and keep the whole deck visible without
- * scrolling in portrait mode, with the horizontal pitch strip preserved above.
+ * UX rationale: Smaller circular performance pads laid out in a 2x2 grid ensure clear separation
+ * and prevent overlap on narrow phones while keeping labels readable. The play button sits centered
+ * within the waveform block to reduce vertical stacking and keep the entire deck visible without
+ * scrolling, with the horizontal pitch strip preserved above.
  */
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -869,7 +869,7 @@ const effectNodesRef = useRef<{
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative flex items-center justify-center">
           <Waveform 
             isPlaying={state.playing} 
             volume={state.volume * (0.5 + state.eqLow * 0.5)} 
@@ -879,10 +879,10 @@ const effectNodesRef = useRef<{
           <button
             onClick={togglePlay}
             disabled={!state.isReady}
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/80 border-2 flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_20px_rgba(208,188,255,0.35)]' : 'border-white/20'}`}
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/80 border-2 flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_16px_rgba(208,188,255,0.35)]' : 'border-white/20'}`}
             aria-label={state.playing ? 'Pause' : 'Play'}
           >
-            <span className="material-icons text-2xl text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
+            <span className="material-icons text-[22px] text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
           </button>
         </div>
 
@@ -924,7 +924,7 @@ const effectNodesRef = useRef<{
               <div className="flex justify-between items-center px-1">
                  <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Hot Cues</div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 place-items-center">
                 {[0, 1, 2, 3].map((i) => (
                   <button 
                     key={i} 
@@ -933,7 +933,7 @@ const effectNodesRef = useRef<{
                     onPointerUp={() => handleHotCuePointerUp(i)}
                     onPointerCancel={() => handleHotCuePointerUp(i)}
                     onPointerLeave={() => handleHotCuePointerUp(i)}
-                    className={`h-10 w-10 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/10 text-gray-200 hover:border-white/30'}`} 
+                    className={`h-9 w-9 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/10 text-gray-200 hover:border-white/30'}`} 
                     style={state.hotCues[i] !== null ? { backgroundColor: CUE_COLORS[i], borderColor: CUE_COLORS[i], boxShadow: `0 0 10px ${CUE_COLORS[i]}44` } : {}}
                   >
                     {i + 1}
@@ -943,9 +943,9 @@ const effectNodesRef = useRef<{
             </div>
             <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-2">
               <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest px-1">Loops</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 place-items-center">
                 {[2, 4, 8, 16].map((b) => (
-                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-10 w-10 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/10 text-gray-200 hover:text-white hover:border-white/30'}`}>{b}</button>
+                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-9 w-9 text-[11px] rounded-full font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/10 text-gray-200 hover:text-white hover:border-white/30'}`}>{b}</button>
                 ))}
               </div>
             </div>
