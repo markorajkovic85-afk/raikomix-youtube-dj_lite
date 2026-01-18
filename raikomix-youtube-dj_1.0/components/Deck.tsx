@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { DeckId, EffectType, PlayerState, TrackSourceType } from '../types';
@@ -90,6 +89,10 @@ const Deck = forwardRef<DeckHandle, DeckProps>(({ id, color, onStateUpdate, onPl
   const tempoContainerRef = useRef<HTMLDivElement>(null);
   const tempoPointerIdRef = useRef<number | null>(null);
   const tempoDraggingRef = useRef(false);
+  const timelinePointerIdRef = useRef<number | null>(null);
+  const timelineDraggingRef = useRef(false);
+  const hotCuePressTimeoutsRef = useRef<Record<number, number>>({});
+  const hotCueLongPressRef = useRef<Record<number, boolean>>({});
   const containerId = `yt-player-${id}`;
   
 const formatTime = useCallback((timeSeconds: number) => {
@@ -554,6 +557,55 @@ const effectNodesRef = useRef<{
     }
   }, [state.hotCues, state.currentTime, state.sourceType]);
 
+  const seekToTimelinePosition = useCallback((clientX: number, target: HTMLDivElement) => {
+    const rect = target.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const time = pct * state.duration;
+    if (state.sourceType === 'youtube') playerRef.current?.seekTo(time, true);
+    else if (localAudioRef.current) localAudioRef.current.currentTime = time;
+  }, [state.duration, state.sourceType]);
+
+  const handleTimelinePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!state.isReady) return;
+    const target = event.currentTarget;
+    timelinePointerIdRef.current = event.pointerId;
+    timelineDraggingRef.current = true;
+    target.setPointerCapture(event.pointerId);
+    seekToTimelinePosition(event.clientX, target);
+  }, [seekToTimelinePosition, state.isReady]);
+
+  const handleTimelinePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!timelineDraggingRef.current || timelinePointerIdRef.current !== event.pointerId) return;
+    seekToTimelinePosition(event.clientX, event.currentTarget);
+  }, [seekToTimelinePosition]);
+
+  const handleTimelinePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (timelinePointerIdRef.current !== event.pointerId) return;
+    timelineDraggingRef.current = false;
+    timelinePointerIdRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }, []);
+
+  const handleHotCuePointerDown = useCallback((index: number) => {
+    hotCueLongPressRef.current[index] = false;
+    const timeout = window.setTimeout(() => {
+      hotCueLongPressRef.current[index] = true;
+      handleHotCue(index, true);
+    }, 450);
+    hotCuePressTimeoutsRef.current[index] = timeout;
+  }, [handleHotCue]);
+
+  const handleHotCuePointerUp = useCallback((index: number) => {
+    const timeout = hotCuePressTimeoutsRef.current[index];
+    if (timeout) {
+      window.clearTimeout(timeout);
+      delete hotCuePressTimeoutsRef.current[index];
+    }
+    if (!hotCueLongPressRef.current[index]) {
+      handleHotCue(index, false);
+    }
+  }, [handleHotCue]);
+
   const togglePlay = useCallback(() => {
     // Resume context if suspended (browser policy)
     if (audioCtxRef.current?.state === 'suspended') {
@@ -797,14 +849,11 @@ const effectNodesRef = useRef<{
               </button>
             </div>
             <div 
-              className="h-10 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10 touch-target"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const pct = (e.clientX - rect.left) / rect.width;
-                const time = pct * state.duration;
-                if (state.sourceType === 'youtube') playerRef.current?.seekTo(time, true);
-                else if (localAudioRef.current) localAudioRef.current.currentTime = time;
-              }}
+              className="h-10 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10 touch-target touch-none"
+              onPointerDown={handleTimelinePointerDown}
+              onPointerMove={handleTimelinePointerMove}
+              onPointerUp={handleTimelinePointerUp}
+              onPointerCancel={handleTimelinePointerUp}
             >
               <div className="absolute inset-y-0 left-0 opacity-20" style={{ width: `${(state.currentTime / (state.duration || 1)) * 100}%`, backgroundColor: color }} />
               {state.hotCues.map((cue, idx) => cue !== null && (
@@ -880,14 +929,17 @@ const effectNodesRef = useRef<{
             <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
               <div className="flex justify-between items-center px-1">
                  <div className="text-xs text-gray-400 font-black uppercase tracking-widest">Hot Cues</div>
-                 <div className="text-[11px] text-gray-600 font-black uppercase">Shift + Tap to Clear</div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                 {[0, 1, 2, 3].map((i) => (
                   <button 
                     key={i} 
-                    onClick={(e) => handleHotCue(i, e.shiftKey)} 
-                    className={`h-12 rounded-lg font-black text-sm border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/5 text-gray-200 hover:border-white/20'}`} 
+                    type="button"
+                    onPointerDown={() => handleHotCuePointerDown(i)}
+                    onPointerUp={() => handleHotCuePointerUp(i)}
+                    onPointerCancel={() => handleHotCuePointerUp(i)}
+                    onPointerLeave={() => handleHotCuePointerUp(i)}
+                    className={`h-10 text-xs rounded-lg font-black border transition-all m3-touch touch-target sm:h-12 sm:text-sm ${state.hotCues[i] !== null ? 'text-black' : 'border-white/5 text-gray-200 hover:border-white/20'}`} 
                     style={state.hotCues[i] !== null ? { backgroundColor: CUE_COLORS[i], borderColor: CUE_COLORS[i], boxShadow: `0 0 10px ${CUE_COLORS[i]}44` } : {}}
                   >
                     {i + 1}
@@ -897,9 +949,9 @@ const effectNodesRef = useRef<{
             </div>
             <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
               <div className="text-xs text-gray-400 font-black uppercase tracking-widest px-1">Loops</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                 {[2, 4, 8, 16].map((b) => (
-                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-12 rounded-lg text-sm font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/5 text-gray-200 hover:text-white hover:border-white/20'}`}>{b}</button>
+                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-10 text-xs rounded-lg font-black border transition-all m3-touch touch-target sm:h-12 sm:text-sm ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/5 text-gray-200 hover:text-white hover:border-white/20'}`}>{b}</button>
                 ))}
               </div>
             </div>
