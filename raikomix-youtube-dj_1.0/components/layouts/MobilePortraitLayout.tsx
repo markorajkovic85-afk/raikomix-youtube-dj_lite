@@ -46,6 +46,15 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   const swipeStartX = useRef<number | null>(null);
   const [quickMixOpen, setQuickMixOpen] = useState(false);
 
+  const isSwipeExcludedTarget = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return true;
+    return Boolean(
+      target.closest(
+        'button, a, input, select, textarea, summary, details, [role="button"], [data-swipe-exclude="true"]'
+      )
+    );
+  };
+
   useEffect(() => {
     if (sheetOpen) {
       setQuickMixOpen(false);
@@ -53,11 +62,13 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   }, [sheetOpen]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || navTab === 'MIXER') return;
+    if (isSwipeExcludedTarget(event.target)) return;
     swipeStartX.current = event.clientX;
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (swipeStartX.current === null) return;
+    if (swipeStartX.current === null || navTab === 'MIXER') return;
     const deltaX = event.clientX - swipeStartX.current;
     if (Math.abs(deltaX) > 60) {
       const nextDeck = deltaX < 0 ? 'B' : 'A';
@@ -80,48 +91,46 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
       </header>
 
       <div className="mobile-main">
-        {(navTab === 'DECK_A' || navTab === 'DECK_B' || navTab === 'LIBRARY') && (
-          <>
-            <div className="deck-tabs" role="tablist" aria-label="Deck switcher">
-              <button
-                type="button"
-                onClick={() => {
-                  onDeckFocusChange('A');
-                  onNavTabChange('DECK_A');
-                }}
-                className={`deck-tab m3-touch touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
-                aria-pressed={deckFocus === 'A'}
-              >
-                Deck A
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onDeckFocusChange('B');
-                  onNavTabChange('DECK_B');
-                }}
-                className={`deck-tab m3-touch touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
-                aria-pressed={deckFocus === 'B'}
-              >
-                Deck B
-              </button>
-            </div>
-
-            <div
-              className="deck-stack"
-              onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
+        <div hidden={navTab === 'MIXER'} aria-hidden={navTab === 'MIXER'}>
+          <div className="deck-tabs" role="tablist" aria-label="Deck switcher">
+            <button
+              type="button"
+              onClick={() => {
+                onDeckFocusChange('A');
+                onNavTabChange('DECK_A');
+              }}
+              className={`deck-tab m3-touch touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
+              aria-pressed={deckFocus === 'A'}
             >
-              <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
-                {deckA}
-              </div>
-              <div className={`deck-slot ${deckFocus === 'B' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'B'}>
-                {deckB}
-              </div>
+              Deck A
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onDeckFocusChange('B');
+                onNavTabChange('DECK_B');
+              }}
+              className={`deck-tab m3-touch touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
+              aria-pressed={deckFocus === 'B'}
+            >
+              Deck B
+            </button>
+          </div>
+
+          <div
+            className="deck-stack"
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
+              {deckA}
             </div>
-          </>
-        )}
+            <div className={`deck-slot ${deckFocus === 'B' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'B'}>
+              {deckB}
+            </div>
+          </div>
+        </div>
 
         {navTab === 'MIXER' && (
           <section className="space-y-3" aria-label="Mixer">
