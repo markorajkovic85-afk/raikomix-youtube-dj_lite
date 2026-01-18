@@ -27,6 +27,7 @@ import {
   incrementPlayCount,
   updateTrackMetadata
 } from './utils/libraryStorage';
+import { loadQueue, saveQueue } from './utils/queueStorage';
 import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
@@ -38,7 +39,7 @@ const App: React.FC = () => {
   const [deckBState, setDeckBState] = useState<PlayerState | null>(null);
   const [masterPlayerA, setMasterPlayerA] = useState<any>(null);
   const [masterPlayerB, setMasterPlayerB] = useState<any>(null);
-  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [queue, setQueue] = useState<QueueItem[]>(() => loadQueue());
   const [crossfader, setCrossfader] = useState(0);
   const [xFaderCurve, setXFaderCurve] = useState<CrossfaderCurve>('SMOOTH');
   const [masterVolume, setMasterVolume] = useState(0.8);
@@ -103,6 +104,10 @@ const App: React.FC = () => {
   useEffect(() => {
     saveLibrary(library);
   }, [library]);
+
+  useEffect(() => {
+    saveQueue(queue);
+  }, [queue]);
 
   useEffect(() => {
     if (layoutMode === 'tablet') {
@@ -319,7 +324,17 @@ const App: React.FC = () => {
         }}
         onRemove={id => setQueue(p => p.filter(i => i.id !== id))}
         onClear={() => setQueue([])}
-        onReorder={() => {}}
+        onReorder={(from, to) => {
+          setQueue(prev => {
+            if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) {
+              return prev;
+            }
+            const next = [...prev];
+            const [moved] = next.splice(from, 1);
+            next.splice(to, 0, moved);
+            return next;
+          });
+        }}
       />
     </div>
   );
