@@ -1,13 +1,3 @@
-diff --git a/raikomix-youtube-dj_1.0/components/Mixer.tsx b/raikomix-youtube-dj_1.0/components/Mixer.tsx
-index 9c34e4bc2595d22180765119d250bdba6eaab199..e652f4567b04444bb55f410cbfbd9aba9b090465 100644
---- a/raikomix-youtube-dj_1.0/components/Mixer.tsx
-+++ b/raikomix-youtube-dj_1.0/components/Mixer.tsx
-@@ -1,407 +1,574 @@
--
-+/*
-+Layout update: Rebuilt the mixer into symmetric deck cards with EQ grids, horizontal channel volume sliders, and a centered master knob row so every control remains visible and aligned while fitting on a single mobile portrait screen.
-+Touch update: Preserved large touch targets, smooth pointer-driven drag handling, and double‑tap reset on every continuous control (knobs, channel/master faders, and crossfader) for fast mobile DJ recovery.
-+*/
  import React, { useState, useEffect, useRef } from 'react';
  import { CrossfaderCurve } from '../types';
  
