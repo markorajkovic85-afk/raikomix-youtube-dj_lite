@@ -35,10 +35,16 @@ const MarqueeText: React.FC<{ text: string; className: string }> = ({ text, clas
 };
 
 const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, onClear, onReorder }) => {
+  const [expandedQueueId, setExpandedQueueId] = useState<string | null>(null);
+
+  const toggleExpandedQueue = (id: string) => {
+    setExpandedQueueId((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <div className="flex flex-col h-full gap-4 elevation-2">
+    <div className="flex flex-col h-full gap-2 elevation-2">
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">Play Queue ({queue.length})</h3>
+        <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-500">Play Queue ({queue.length})</h3>
         {queue.length > 0 && (
          <div className="flex items-center gap-2">
             <button
@@ -58,8 +64,8 @@ const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, 
         )}
       </div>
 
-      {/* UX rationale: compact row height and always-visible controls reduce missed taps during quick mixing. */}
-      <div className="flex-1 overflow-y-auto pr-2 space-y-1.5 scrollbar-hide">
+      {/* UX rationale: reduce chrome and row height so more queue items remain visible on small screens. */}
+      <div className="flex-1 overflow-y-auto pr-2 space-y-0.5 scrollbar-hide">
         {queue.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 opacity-50">
             <span className="material-symbols-outlined text-4xl mb-2">queue_music</span>
@@ -68,62 +74,77 @@ const QueuePanel: React.FC<QueuePanelProps> = ({ queue, onLoadToDeck, onRemove, 
         )}
 
         {queue.map((item, index) => (
-          <div key={item.id} className="m3-card p-2 flex gap-2 items-center bg-[#1C1B1F]/40 hover:bg-[#2B2930] motion-standard border-dashed elevation-1 hover:elevation-2 overflow-hidden">
+          <div key={item.id} className="m3-card px-2 py-1.5 flex gap-2 items-center bg-[#1C1B1F]/40 hover:bg-[#2B2930] motion-standard border-dashed elevation-1 hover:elevation-2 overflow-hidden">
             <div className="flex flex-col items-center gap-0.5">
               <button
                 type="button"
                 onClick={() => onReorder(index, index - 1)}
                 disabled={index === 0}
-                className="w-5 h-5 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
+                className="w-4 h-4 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
                 aria-label={`Move ${item.title} up`}
               >
-                <span className="material-symbols-outlined text-sm">keyboard_arrow_up</span>
+                <span className="material-symbols-outlined text-[12px]">keyboard_arrow_up</span>
               </button>
-              <span className="text-[9px] font-mono text-gray-600 w-4 text-center">{index + 1}</span>
+              <span className="text-[8px] font-mono text-gray-600 w-4 text-center">{index + 1}</span>
               <button
                 type="button"
                 onClick={() => onReorder(index, index + 1)}
                 disabled={index === queue.length - 1}
-                className="w-5 h-5 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
+                className="w-4 h-4 rounded-full text-gray-500 hover:text-white disabled:opacity-30"
                 aria-label={`Move ${item.title} down`}
               >
-                <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+                <span className="material-symbols-outlined text-[12px]">keyboard_arrow_down</span>
               </button>
             </div>
-            <div className="w-10 h-10 bg-black rounded overflow-hidden flex-shrink-0 elevation-1">
+            <div className="w-9 h-9 bg-black rounded overflow-hidden flex-shrink-0 elevation-1">
               <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-hidden">
-              <MarqueeText 
-                text={item.title} 
-                className="text-[11px] font-semibold text-[#E6E1E5] leading-tight" 
-              />
-              <MarqueeText 
-                text={item.author || 'Unknown Artist'} 
-                className="text-[9px] text-gray-400 font-medium" 
-              />
+              <button
+                type="button"
+                onClick={() => toggleExpandedQueue(item.id)}
+                className="w-full text-left focus:outline-none"
+                aria-expanded={expandedQueueId === item.id}
+                aria-label={expandedQueueId === item.id ? `Collapse ${item.title}` : `Expand ${item.title}`}
+              >
+                <div className={`text-[10px] font-semibold text-[#E6E1E5] leading-tight ${expandedQueueId === item.id ? 'whitespace-normal break-words' : 'truncate'}`}>
+                  {item.title}
+                </div>
+                <div className={`text-[8px] text-gray-400 font-medium ${expandedQueueId === item.id ? 'whitespace-normal break-words' : 'truncate'}`}>
+                  {item.author || 'Unknown Artist'}
+                </div>
+              </button>
             </div>
             <div className="flex gap-1 motion-standard">
+              <button
+                onClick={() => toggleExpandedQueue(item.id)}
+                className="w-5 h-5 rounded-md bg-white/5 text-gray-300 flex items-center justify-center hover:bg-white/15 transition-all"
+                aria-label={expandedQueueId === item.id ? `Collapse ${item.title}` : `Expand ${item.title}`}
+              >
+                <span className="material-symbols-outlined text-[12px]">
+                  {expandedQueueId === item.id ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
               <button 
                 onClick={() => onLoadToDeck(item, 'A')}
-                className="px-2 py-1 rounded bg-[#D0BCFF]/10 text-[#D0BCFF] text-[9px] font-black motion-emphasized elevation-1 hover:elevation-2"
+                className="px-1.5 py-0.5 rounded bg-[#D0BCFF]/10 text-[#D0BCFF] text-[8px] font-black motion-emphasized elevation-1 hover:elevation-2"
                 aria-label={`Load ${item.title} to Deck A`}
               >
                 A
               </button>
               <button 
                 onClick={() => onLoadToDeck(item, 'B')}
-                className="px-2 py-1 rounded bg-[#F2B8B5]/10 text-[#F2B8B5] text-[9px] font-black motion-emphasized elevation-1 hover:elevation-2"
+                className="px-1.5 py-0.5 rounded bg-[#F2B8B5]/10 text-[#F2B8B5] text-[8px] font-black motion-emphasized elevation-1 hover:elevation-2"
                 aria-label={`Load ${item.title} to Deck B`}
               >
                 B
               </button>
               <button 
                 onClick={() => onRemove(item.id)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 motion-standard"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 motion-standard"
                 aria-label={`Remove ${item.title} from queue`}
               >
-                <span className="material-symbols-outlined text-lg">close</span>
+                <span className="material-symbols-outlined text-[14px]">close</span>
               </button>
             </div>
           </div>
