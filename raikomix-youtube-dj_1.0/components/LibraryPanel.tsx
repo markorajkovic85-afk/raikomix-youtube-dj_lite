@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { LibraryTrack, Playlist, DeckId } from '../types';
 import { exportLibrary, loadPlaylists, savePlaylists } from '../utils/libraryStorage';
@@ -197,13 +196,28 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
               </button>
             </>
           )}
-          <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white" title="Import Local Files">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white"
+            title="Import Local Files"
+            aria-label="Import local files"
+          >
             <span className="material-symbols-outlined text-sm">folder_open</span>
           </button>
-          <button onClick={() => setShowBulkAdd(true)} className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white" title="Import YouTube Playlist">
+          <button
+            onClick={() => setShowBulkAdd(true)}
+            className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white"
+            title="Import YouTube Playlist"
+            aria-label="Import YouTube playlist"
+          >
             <span className="material-symbols-outlined text-sm">dynamic_feed</span>
           </button>
-          <button onClick={() => exportLibrary(library)} className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white" title="Export JSON">
+          <button
+            onClick={() => exportLibrary(library)}
+            className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white"
+            title="Export JSON"
+            aria-label="Export library JSON"
+          >
             <span className="material-symbols-outlined text-sm">download</span>
           </button>
         </div>
@@ -272,16 +286,36 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
               <div className="text-[9px] text-gray-500 truncate uppercase font-bold tracking-tighter">{t.author}</div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-              <button 
-                onClick={() => onAddToQueue(t)} 
+              <button
+                onClick={() => onAddToQueue(t)}
                 className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"
                 title="Add to Queue"
+                aria-label={`Add ${t.title} to queue`}
               >
                 <span className="material-symbols-outlined text-sm">playlist_add</span>
               </button>
-              <button onClick={() => onLoadToDeck(t, 'A')} className="w-7 h-7 rounded-lg bg-[#D0BCFF] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all">A</button>
-              <button onClick={() => onLoadToDeck(t, 'B')} className="w-7 h-7 rounded-lg bg-[#F2B8B5] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all">B</button>
-              <button onClick={() => onRemove(t.id)} className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-all" title="Remove"><span className="material-symbols-outlined text-sm">delete</span></button>
+              <button
+                onClick={() => onLoadToDeck(t, 'A')}
+                className="w-7 h-7 rounded-lg bg-[#D0BCFF] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all"
+                aria-label={`Load ${t.title} to Deck A`}
+              >
+                A
+              </button>
+              <button
+                onClick={() => onLoadToDeck(t, 'B')}
+                className="w-7 h-7 rounded-lg bg-[#F2B8B5] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all"
+                aria-label={`Load ${t.title} to Deck B`}
+              >
+                B
+              </button>
+              <button
+                onClick={() => onRemove(t.id)}
+                className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-all"
+                title="Remove"
+                aria-label={`Remove ${t.title} from library`}
+              >
+                <span className="material-symbols-outlined text-sm">delete</span>
+              </button>
             </div>
           </div>
         ))}
