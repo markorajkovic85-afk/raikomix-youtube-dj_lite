@@ -25,8 +25,44 @@
 }
 
 .touch-target {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.m3-touch {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.m3-touch::after,
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 140ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.m3-touch:active::after,
+.m3-touch:focus-visible::after,
+button:active::after,
+button:focus-visible::after {
+  opacity: 0.12;
+}
+
+button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+button > * {
+  position: relative;
+  z-index: 1;
 }
 
 .mobile-layout {
@@ -35,7 +71,30 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: 16px 16px 0;
+  background: var(--md-sys-color-surface);
+}
+
+.mobile-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--md-sys-color-surface-container-high);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--md-sys-elevation-1);
+}
+
+.mobile-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+  padding-bottom: calc(168px + env(safe-area-inset-bottom));
 }
 
 .mobile-header {
@@ -53,6 +112,34 @@
   display: inline-flex;
   gap: 8px;
   align-items: center;
+}
+
+.deck-tabs {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--md-sys-color-surface-container-high);
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.deck-tab {
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.deck-tab.is-active {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: 0 0 14px rgba(208, 188, 255, 0.35);
 }
 
 .deck-switcher__button {
@@ -106,6 +193,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
+  gap: 12px;
 }
 
 .deck-slot {
@@ -120,6 +208,59 @@
   display: flex;
   justify-content: center;
   align-items: stretch;
+}
+
+.mobile-mixer-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--md-sys-elevation-2);
+  z-index: 45;
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  background: var(--md-sys-color-surface-container);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--md-sys-elevation-2);
+  z-index: 50;
+}
+
+.bottom-nav__item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.bottom-nav__item.is-active {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.bottom-nav__icon {
+  font-size: 20px;
 }
 
 .landscape-grid {
@@ -143,7 +284,7 @@
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  bottom: calc(96px + env(safe-area-inset-bottom));
   margin: 0 auto;
   max-width: 960px;
   background: var(--md-sys-color-surface-container);
@@ -154,6 +295,7 @@
   height: var(--sheet-collapsed);
   transition: height var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
   z-index: 40;
+  box-shadow: var(--md-sys-elevation-4);
 }
 
 .panel-sheet[data-expanded='true'] {
@@ -168,6 +310,13 @@
   padding: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.35);
+}
+
+.panel-sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .panel-sheet__tabs {
@@ -197,6 +346,55 @@
 .panel-sheet__actions {
   display: inline-flex;
   gap: 6px;
+}
+
+.collapsible-panel {
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+}
+
+.collapsible-panel summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.collapsible-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-panel summary::after {
+  content: 'expand_more';
+  font-family: 'Material Icons';
+  font-size: 18px;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: transform 150ms ease;
+}
+
+.collapsible-panel[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.collapsible-content {
+  margin-top: 12px;
+}
+
+.collapsible-panel:not([open]) > .collapsible-content {
+  display: none;
+}
+
+.m3-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .panel-sheet__body {
@@ -299,8 +497,8 @@
 }
 
 .utility-button {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.4);
@@ -314,6 +512,10 @@
   .tablet-layout {
     display: none;
   }
+  button {
+    min-height: 48px;
+    min-width: 48px;
+  }
 }
 
 @media (max-width: 567px) {
@@ -322,18 +524,28 @@
     right: 8px;
   }
   .mobile-layout {
-    padding: 10px;
+    padding: 12px 12px 0;
   }
 }
 
 @media (max-width: 567px) {
   .app-shell {
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
 @media (min-width: 568px) and (max-width: 767px) {
   .app-shell {
-    font-size: 15px;
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .collapsible-panel summary {
+    display: none;
+  }
+  .collapsible-panel > .collapsible-content {
+    display: block;
+    margin-top: 0;
   }
 }

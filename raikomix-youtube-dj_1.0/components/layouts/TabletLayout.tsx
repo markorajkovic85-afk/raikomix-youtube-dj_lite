@@ -39,7 +39,7 @@ const TabletLayout: React.FC<TabletLayoutProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => onPanelTabChange(tab)}
-                  className={`panel-tab touch-target ${panelTab === tab ? 'is-active' : ''}`}
+                  className={`panel-tab m3-touch touch-target ${panelTab === tab ? 'is-active' : ''}`}
                   aria-pressed={panelTab === tab}
                 >
                   {tab === 'LIBRARY' ? 'Library' : 'Queue'}
@@ -75,7 +75,7 @@ const TabletLayout: React.FC<TabletLayoutProps> = ({
             <button
               type="button"
               onClick={onEffectsCollapseToggle}
-              className="utility-button touch-target"
+              className="utility-button m3-touch touch-target"
               aria-label={effectsCollapsed ? 'Expand effects' : 'Collapse effects'}
             >
               <span className="material-icons text-base">{effectsCollapsed ? 'chevron_left' : 'chevron_right'}</span>
