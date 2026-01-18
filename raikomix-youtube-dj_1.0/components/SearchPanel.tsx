@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { YouTubeSearchResult, DeckId } from '../types';
 import { searchYouTube } from '../utils/youtubeApi';
@@ -74,12 +73,35 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onLoadToDeck, onAddToQueue, o
               <p className="text-[8px] text-gray-500 uppercase mt-0.5">{r.channelTitle}</p>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-              <button onClick={() => onLoadToDeck(r.videoId, `https://www.youtube.com/watch?v=${r.videoId}`, 'A', r.title, r.channelTitle)} className="w-6 h-6 bg-[#D0BCFF] text-black rounded-md text-[9px] font-black">A</button>
-              <button onClick={() => onLoadToDeck(r.videoId, `https://www.youtube.com/watch?v=${r.videoId}`, 'B', r.title, r.channelTitle)} className="w-6 h-6 bg-[#F2B8B5] text-black rounded-md text-[9px] font-black">B</button>
-               <button onClick={() => onAddToLibrary(r)} className="w-6 h-6 bg-white/10 text-white rounded-md flex items-center justify-center" title="Add to Library">
+              <button
+                onClick={() => onLoadToDeck(r.videoId, `https://www.youtube.com/watch?v=${r.videoId}`, 'A', r.title, r.channelTitle)}
+                className="w-6 h-6 bg-[#D0BCFF] text-black rounded-md text-[9px] font-black"
+                aria-label={`Load ${r.title} to Deck A`}
+              >
+                A
+              </button>
+              <button
+                onClick={() => onLoadToDeck(r.videoId, `https://www.youtube.com/watch?v=${r.videoId}`, 'B', r.title, r.channelTitle)}
+                className="w-6 h-6 bg-[#F2B8B5] text-black rounded-md text-[9px] font-black"
+                aria-label={`Load ${r.title} to Deck B`}
+              >
+                B
+              </button>
+               <button
+                onClick={() => onAddToLibrary(r)}
+                className="w-6 h-6 bg-white/10 text-white rounded-md flex items-center justify-center"
+                title="Add to Library"
+                aria-label={`Add ${r.title} to Library`}
+              >
                 <span className="material-symbols-outlined text-xs">library_add</span>
               </button>
-              <button onClick={() => onAddToQueue(r)} className="w-6 h-6 bg-white/10 text-white rounded-md flex items-center justify-center"><span className="material-symbols-outlined text-xs">add</span></button>
+              <button
+                onClick={() => onAddToQueue(r)}
+                className="w-6 h-6 bg-white/10 text-white rounded-md flex items-center justify-center"
+                aria-label={`Add ${r.title} to queue`}
+              >
+                <span className="material-symbols-outlined text-xs">add</span>
+              </button>
             </div>
           </div>
         ))}
