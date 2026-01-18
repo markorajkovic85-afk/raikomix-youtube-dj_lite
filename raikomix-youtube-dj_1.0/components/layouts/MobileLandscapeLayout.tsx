@@ -43,7 +43,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
           <button
             type="button"
             onClick={() => onSheetToggle(!sheetOpen)}
-            className="panel-trigger touch-target"
+            className="panel-trigger m3-touch touch-target"
             aria-expanded={sheetOpen}
           >
             <span className="material-icons text-base">queue_music</span>
@@ -52,7 +52,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
           <button
             type="button"
             onClick={() => onEffectsToggle(!effectsOpen)}
-            className="panel-trigger touch-target"
+            className="panel-trigger m3-touch touch-target"
             aria-expanded={effectsOpen}
           >
             <span className="material-icons text-base">tune</span>
@@ -77,7 +77,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => onSheetTabChange(tab)}
-                  className={`panel-tab touch-target ${sheetTab === tab ? 'is-active' : ''}`}
+                  className={`panel-tab m3-touch touch-target ${sheetTab === tab ? 'is-active' : ''}`}
                   aria-pressed={sheetTab === tab}
                 >
                   {tab === 'LIBRARY' ? 'Library' : 'Queue'}
@@ -88,7 +88,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
               <button
                 type="button"
                 onClick={onSheetExpandedToggle}
-                className="utility-button touch-target"
+                className="utility-button m3-touch touch-target"
                 aria-label={sheetExpanded ? 'Collapse panel' : 'Expand panel'}
               >
                 <span className="material-icons text-base">{sheetExpanded ? 'expand_more' : 'expand_less'}</span>
@@ -96,7 +96,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
               <button
                 type="button"
                 onClick={() => onSheetToggle(false)}
-                className="utility-button touch-target"
+                className="utility-button m3-touch touch-target"
                 aria-label="Close panel"
               >
                 <span className="material-icons text-base">close</span>
@@ -120,7 +120,7 @@ const MobileLandscapeLayout: React.FC<MobileLandscapeLayoutProps> = ({
           <button
             type="button"
             onClick={() => onEffectsToggle(false)}
-            className="utility-button touch-target"
+            className="utility-button m3-touch touch-target"
             aria-label="Close effects"
           >
             <span className="material-icons text-base">close</span>
