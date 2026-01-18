@@ -165,7 +165,7 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
   ).sort((a, b) => b.addedAt - a.addedAt);
 
   return (
-     <div className="flex flex-col gap-4 p-4 bg-[#1C1B1F] rounded-xl border border-white/5 h-full min-h-0 overflow-hidden relative">
+     <div className="flex flex-col gap-2 p-3 bg-[#1C1B1F] rounded-xl border border-white/5 h-full min-h-0 overflow-hidden relative">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -177,7 +177,7 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
 
       <div className="flex justify-between items-center">
         <div className="flex flex-col">
-          <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Collection ({library.length})</h3>
+          <h3 className="text-[9px] font-black uppercase text-gray-500 tracking-widest">Collection ({library.length})</h3>
           {selectedTracks.size > 0 && (
             <span className="text-[8px] font-bold text-[#D0BCFF] uppercase animate-pulse">{selectedTracks.size} Selected</span>
           )}
@@ -228,18 +228,18 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <form onSubmit={handleAddUrl} className="relative group">
           <input 
             type="text" 
             value={url} 
             onChange={e => setUrl(e.target.value)} 
             placeholder="Paste YouTube Link..." 
-            className="w-full bg-[#2B2930] border border-white/5 rounded-full py-2.5 pl-4 pr-16 text-[11px] focus:outline-none focus:border-[#D0BCFF]/50 transition-all shadow-inner" 
+            className="w-full bg-[#2B2930] border border-white/5 rounded-full py-2 pl-3 pr-14 text-[10px] focus:outline-none focus:border-[#D0BCFF]/50 transition-all shadow-inner" 
           />
           <button 
             type="submit" 
-            className="absolute right-1 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black px-3 py-1.5 rounded-full text-[9px] font-black tracking-tighter hover:scale-105 active:scale-95 transition-all"
+            className="absolute right-1 top-1/2 -translate-y-1/2 bg-[#D0BCFF] text-black px-3 py-1 rounded-full text-[8px] font-black tracking-tighter hover:scale-105 active:scale-95 transition-all"
           >
             ADD
           </button>
@@ -251,39 +251,38 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             placeholder="Search tracks..." 
-            className="w-full bg-black/30 border border-white/5 rounded-full py-2.5 px-10 text-[11px] focus:outline-none" 
+            className="w-full bg-black/30 border border-white/5 rounded-full py-2 px-9 text-[10px] focus:outline-none" 
           />
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">filter_list</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-[12px]">filter_list</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <button 
           onClick={handleSelectAll} 
-          className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase border transition-all shrink-0 ${selectedTracks.size === filtered.length && filtered.length > 0 ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-500 border-white/5'}`}
+          className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase border transition-all shrink-0 ${selectedTracks.size === filtered.length && filtered.length > 0 ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-500 border-white/5'}`}
         >
           {selectedTracks.size === filtered.length && filtered.length > 0 ? 'Deselect All' : 'Select All'}
         </button>
         <div className="w-px h-4 bg-white/10 shrink-0" />
-        <button onClick={() => setActivePl(null)} className={`px-4 py-2 rounded-full text-[9px] font-black uppercase border transition-all shrink-0 ${!activePl ? 'bg-[#D0BCFF] text-black border-[#D0BCFF]' : 'bg-black/40 text-gray-500 border-white/5 hover:border-white/20'}`}>All Tracks</button>
+        <button onClick={() => setActivePl(null)} className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase border transition-all shrink-0 ${!activePl ? 'bg-[#D0BCFF] text-black border-[#D0BCFF]' : 'bg-black/40 text-gray-500 border-white/5 hover:border-white/20'}`}>All Tracks</button>
         {playlists.map(p => (
-          <button key={p.id} onClick={() => setActivePl(p.id)} className={`px-4 py-2 rounded-full text-[9px] font-black uppercase border transition-all shrink-0 ${activePl === p.id ? 'bg-[#D0BCFF] text-black border-[#D0BCFF]' : 'bg-black/40 text-gray-500 border-white/5 hover:border-white/20'}`}>{p.name}</button>
+          <button key={p.id} onClick={() => setActivePl(p.id)} className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase border transition-all shrink-0 ${activePl === p.id ? 'bg-[#D0BCFF] text-black border-[#D0BCFF]' : 'bg-black/40 text-gray-500 border-white/5 hover:border-white/20'}`}>{p.name}</button>
         ))}
       </div>
 
-      {/* UX rationale: tighten vertical density, keep actions visible, and allow tap-to-expand for full titles/artists.
-          This improves readability and fast scrolling on small screens without hiding critical metadata. */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
+      {/* UX rationale: maximize visible rows on mobile by shrinking chrome and row height, while keeping tap-to-expand metadata. */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 pr-1 scrollbar-hide">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center">
             <span className="material-symbols-outlined text-4xl mb-2">inventory_2</span>
             <p className="text-[10px] font-black uppercase tracking-widest">Library Empty</p>
           </div>
         ) : filtered.map(t => (
-          <div key={t.id} className={`group flex gap-2 items-center p-2 rounded-xl border transition-all relative ${selectedTracks.has(t.id) ? 'bg-[#D0BCFF]/10 border-[#D0BCFF]/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}>
-            <input type="checkbox" checked={selectedTracks.has(t.id)} onChange={() => toggleSelect(t.id)} className="w-3.5 h-3.5 accent-[#D0BCFF] shrink-0" />
+          <div key={t.id} className={`group flex gap-2 items-center px-2 py-1.5 rounded-lg border transition-all relative ${selectedTracks.has(t.id) ? 'bg-[#D0BCFF]/10 border-[#D0BCFF]/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}>
+            <input type="checkbox" checked={selectedTracks.has(t.id)} onChange={() => toggleSelect(t.id)} className="w-3 h-3 accent-[#D0BCFF] shrink-0" />
             <div className="relative shrink-0">
-              <img src={t.thumbnailUrl} alt="" className="w-12 h-9 rounded-lg object-cover shadow-lg" />
+              <img src={t.thumbnailUrl} alt="" className="w-10 h-7 rounded-md object-cover shadow-lg" />
               {t.sourceType === 'local' && (
                 <div className="absolute -top-1 -right-1 bg-blue-500 border border-black w-2.5 h-2.5 rounded-full" title="Local File" />
               )}
@@ -296,53 +295,53 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
                 aria-expanded={expandedTrackId === t.id}
                 aria-label={expandedTrackId === t.id ? `Collapse ${t.title}` : `Expand ${t.title}`}
               >
-                <div className={`text-[11px] font-bold text-white leading-tight transition-colors ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'} group-hover:text-[#D0BCFF]`}>
+                <div className={`text-[10px] font-bold text-white leading-tight transition-colors ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'} group-hover:text-[#D0BCFF]`}>
                   {t.title}
                 </div>
-                <div className={`text-[9px] text-gray-500 uppercase font-bold tracking-tighter ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'}`}>
+                <div className={`text-[8px] text-gray-500 uppercase font-bold tracking-tighter ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {t.author}
                 </div>
               </button>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => toggleExpandedTrack(t.id)}
-                className="w-6 h-6 rounded-lg bg-white/5 text-gray-300 flex items-center justify-center hover:bg-white/15 transition-all"
+                className="w-5 h-5 rounded-md bg-white/5 text-gray-300 flex items-center justify-center hover:bg-white/15 transition-all"
                 aria-label={expandedTrackId === t.id ? `Collapse ${t.title}` : `Expand ${t.title}`}
               >
-                <span className="material-symbols-outlined text-sm">
+                <span className="material-symbols-outlined text-[12px]">
                   {expandedTrackId === t.id ? 'expand_less' : 'expand_more'}
                 </span>
               </button>
               <button
                 onClick={() => onAddToQueue(t)}
-                className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"
+                className="w-6 h-6 rounded-md bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"
                 title="Add to Queue"
                 aria-label={`Add ${t.title} to queue`}
               >
-                <span className="material-symbols-outlined text-sm">playlist_add</span>
+                <span className="material-symbols-outlined text-[12px]">playlist_add</span>
               </button>
               <button
                 onClick={() => onLoadToDeck(t, 'A')}
-                className="w-7 h-7 rounded-lg bg-[#D0BCFF] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all"
+                className="w-6 h-6 rounded-md bg-[#D0BCFF] text-black text-[9px] font-black hover:scale-110 active:scale-90 transition-all"
                 aria-label={`Load ${t.title} to Deck A`}
               >
                 A
               </button>
               <button
                 onClick={() => onLoadToDeck(t, 'B')}
-                className="w-7 h-7 rounded-lg bg-[#F2B8B5] text-black text-[10px] font-black hover:scale-110 active:scale-90 transition-all"
+                className="w-6 h-6 rounded-md bg-[#F2B8B5] text-black text-[9px] font-black hover:scale-110 active:scale-90 transition-all"
                 aria-label={`Load ${t.title} to Deck B`}
               >
                 B
               </button>
               <button
                 onClick={() => onRemove(t.id)}
-                className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-all"
+                className="w-6 h-6 rounded-md bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-all"
                 title="Remove"
                 aria-label={`Remove ${t.title} from library`}
               >
-                <span className="material-symbols-outlined text-sm">delete</span>
+                <span className="material-symbols-outlined text-[12px]">delete</span>
               </button>
             </div>
           </div>
