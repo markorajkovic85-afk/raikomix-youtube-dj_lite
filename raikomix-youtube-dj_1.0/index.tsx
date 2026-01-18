@@ -1,4 +1,5 @@
-import React, { Component, ReactNode, Suspense } from 'react';
+
+import React, { Component, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 const App = React.lazy(() => import('./App'));
@@ -66,6 +67,53 @@ class RootErrorBoundary extends Component<RootErrorBoundaryProps, RootErrorBound
   }
 }
 
+interface RootErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface RootErrorBoundaryState {
+  hasError: boolean;
+}
+
+class RootErrorBoundary extends Component<RootErrorBoundaryProps, RootErrorBoundaryState> {
+  constructor(props: RootErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): RootErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('RootErrorBoundary caught error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen bg-black flex items-center justify-center text-[#D0BCFF] p-8 text-center">
+          <div className="max-w-md space-y-4">
+            <h1 className="text-2xl font-black uppercase tracking-[0.2em]">Render Recovery</h1>
+            <p className="text-sm text-white/70">
+              The interface failed to load. Please refresh the page or try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-[#D0BCFF] text-black font-black rounded-full"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Could not find root element to mount to');
@@ -95,18 +143,11 @@ window.addEventListener('unhandledrejection', (event) => {
   renderBootstrapError(event.reason);
 });
 
+// Mount immediately to ensure visibility
 root.render(
   <React.StrictMode>
     <RootErrorBoundary>
-      <Suspense
-        fallback={
-          <div className="h-screen bg-black flex items-center justify-center text-[#D0BCFF]">
-            <span className="text-sm uppercase tracking-[0.3em]">Loading…</span>
-          </div>
-        }
-      >
-        <App />
-      </Suspense>
+      <App />
     </RootErrorBoundary>
   </React.StrictMode>
 );
