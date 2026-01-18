@@ -37,8 +37,8 @@ const Knob: React.FC<{
   const startVal = useRef(0);
   const activePointerId = useRef<number | null>(null);
   const knobRef = useRef<HTMLDivElement>(null);
-  const knobSize = size === 'sm' ? 'w-9 h-9' : 'w-11 h-11';
-  const innerSize = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
+  const knobSize = size === 'sm' ? 'w-12 h-12' : 'w-14 h-14';
+  const innerSize = size === 'sm' ? 'w-7 h-7' : 'w-8 h-8';
 
  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -87,7 +87,7 @@ const Knob: React.FC<{
     <div className="flex flex-col items-center gap-0 group select-none">
       <div 
         ref={knobRef}
-        className={`relative ${knobSize} flex items-center justify-center cursor-ns-resize transition-transform duration-150 touch-none ${isDragging ? 'scale-110' : ''}`}
+        className={`relative ${knobSize} flex items-center justify-center cursor-ns-resize transition-transform duration-150 touch-none m3-touch touch-target ${isDragging ? 'scale-110' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -114,7 +114,7 @@ const Knob: React.FC<{
           <div className="w-0.5 h-2.5 bg-white/60 absolute top-0.5 rounded-full" />
         </div>
       </div>
-      <span className={`text-[6px] font-black uppercase tracking-tighter transition-colors pointer-events-none ${isDragging ? 'text-white' : 'text-gray-500 group-hover:text-white/60'}`}>{label}</span>
+      <span className={`text-[10px] font-black uppercase tracking-tighter transition-colors pointer-events-none ${isDragging ? 'text-white' : 'text-gray-400 group-hover:text-white/60'}`}>{label}</span>
     </div>
   );
 };
@@ -125,7 +125,7 @@ const Fader: React.FC<{
   onChange: (val: number) => void,
   color: string,
   height?: string
-}> = ({ label, value, onChange, color, height = 'h-28' }) => {
+}> = ({ label, value, onChange, color, height = 'h-32' }) => {
   const faderRef = useRef<HTMLDivElement>(null);
   const activePointerId = useRef<number | null>(null);
 
@@ -167,10 +167,10 @@ const Fader: React.FC<{
   };
 
   return (
-    <div className="flex flex-col items-center gap-1.5 w-full group relative">
+    <div className="flex flex-col items-center gap-2 w-full group relative">
        <div 
          ref={faderRef}
-            className={`${height} w-6 bg-black/40 rounded-lg relative flex items-end p-0.5 border border-white/5 overflow-hidden cursor-ns-resize shadow-inner touch-none`}
+            className={`${height} w-12 bg-black/40 rounded-lg relative flex items-end p-1 border border-white/5 overflow-hidden cursor-ns-resize shadow-inner touch-none m3-touch touch-target`}
        >
           <div 
             className="w-full rounded transition-all duration-75" 
@@ -192,7 +192,7 @@ const Fader: React.FC<{
              onPointerCancel={handlePointerUp}
           />
        </div>
-       <label className="text-[7px] font-black uppercase tracking-widest" style={{ color: `${color}99` }}>{label}</label>
+       <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: `${color}99` }}>{label}</label>
     </div>
   );
 };
@@ -232,7 +232,7 @@ const Mixer: React.FC<MixerProps> = ({
     if (!rect) return;
     const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize || '16');
     const padding = rootFont;
-    const handleWidth = rootFont * 5;
+    const handleWidth = rootFont * 6;
     const usable = Math.max(1, rect.width - padding * 2 - handleWidth);
     const x = Math.min(Math.max(clientX - rect.left - padding - handleWidth / 2, 0), usable);
     const t = x / usable;
@@ -258,14 +258,14 @@ const Mixer: React.FC<MixerProps> = ({
   };
 
   return (
-    <div className={`m3-card h-full flex flex-col bg-[#1D1B20] shadow-2xl border-white/5 w-[280px] shrink-0 p-2 select-none ${className ?? ''}`} role="region" aria-label="Mixer Controls">
-      <div className="flex flex-col items-center gap-0 border-b border-white/5 pb-1 mb-2">
-        <h2 className="text-[8px] font-black uppercase tracking-[0.4em] text-[#D0BCFF]">Mixing Console</h2>
+    <div className={`m3-card h-full flex flex-col bg-[#1D1B20] shadow-2xl border-white/5 w-full max-w-[360px] md:w-[280px] shrink-0 p-3 select-none ${className ?? ''}`} role="region" aria-label="Mixer Controls">
+      <div className="flex flex-col items-center gap-0 border-b border-white/5 pb-2 mb-2">
+        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#D0BCFF]">Mixing Console</h2>
       </div>
 
       <div className="flex-1 flex justify-between gap-1 overflow-hidden">
         {/* Channel A Section */}
-        <div className="flex flex-col items-center gap-2 bg-black/10 p-1.5 rounded-xl flex-1 border border-white/5">
+        <div className="flex flex-col items-center gap-3 bg-black/10 p-2 rounded-xl flex-1 border border-white/5">
           <div className="flex flex-col items-center gap-1.5 w-full">
             <Knob label="Trim" value={1} onChange={() => {}} color="#D0BCFF" size="sm" defaultValue={1} />
             <div className="w-full h-px bg-white/5" />
@@ -279,7 +279,7 @@ const Mixer: React.FC<MixerProps> = ({
 
           <button 
             onClick={() => setCueA(!cueA)}
-            className={`w-10 h-5 rounded-md text-[7px] font-black uppercase tracking-tighter transition-all border ${cueA ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-black/40 border-white/5 text-gray-500'}`}
+            className={`w-12 h-12 rounded-xl text-xs font-black uppercase tracking-tighter transition-all border m3-touch touch-target ${cueA ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-black/40 border-white/5 text-gray-200'}`}
           >
             Cue
           </button>
@@ -288,7 +288,7 @@ const Mixer: React.FC<MixerProps> = ({
         </div>
 
         {/* Master Section */}
-        <div className="flex flex-col items-center gap-2 py-2 px-0.5 w-10 bg-black/30 rounded-xl border border-white/5 mx-0.5">
+        <div className="flex flex-col items-center gap-2 py-2 px-1 w-12 bg-black/30 rounded-xl border border-white/5 mx-0.5">
            <div className="flex flex-col gap-0.5 items-center flex-1 py-1">
              {[...Array(20)].reverse().map((_, i) => {
                const isActive = (deckAPlaying || deckBPlaying) && (Math.random() > (i / 20));
@@ -302,11 +302,11 @@ const Mixer: React.FC<MixerProps> = ({
              })}
            </div>
            
-           <Fader label="MST" value={masterVolume} onChange={onMasterVolumeChange} color="#FFFFFF" height="h-20" />
+           <Fader label="MST" value={masterVolume} onChange={onMasterVolumeChange} color="#FFFFFF" height="h-24" />
         </div>
 
         {/* Channel B Section */}
-        <div className="flex flex-col items-center gap-2 bg-black/10 p-1.5 rounded-xl flex-1 border border-white/5">
+        <div className="flex flex-col items-center gap-3 bg-black/10 p-2 rounded-xl flex-1 border border-white/5">
           <div className="flex flex-col items-center gap-1.5 w-full">
             <Knob label="Trim" value={1} onChange={() => {}} color="#F2B8B5" size="sm" defaultValue={1} />
             <div className="w-full h-px bg-white/5" />
@@ -320,7 +320,7 @@ const Mixer: React.FC<MixerProps> = ({
 
           <button 
             onClick={() => setCueB(!cueB)}
-            className={`w-10 h-5 rounded-md text-[7px] font-black uppercase tracking-tighter transition-all border ${cueB ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-black/40 border-white/5 text-gray-500'}`}
+            className={`w-12 h-12 rounded-xl text-xs font-black uppercase tracking-tighter transition-all border m3-touch touch-target ${cueB ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-black/40 border-white/5 text-gray-200'}`}
           >
             Cue
           </button>
@@ -331,12 +331,12 @@ const Mixer: React.FC<MixerProps> = ({
 
       {/* Crossfader Section - Enhanced visual design */}
       <div className="mt-4 space-y-2 pt-2 border-t border-white/5 relative">
-        <div className="flex justify-between gap-1 p-0.5 bg-black/30 rounded-lg mb-1">
+        <div className="flex justify-between gap-1 p-1 bg-black/30 rounded-lg mb-1">
           {['SMOOTH', 'CUT', 'DIP'].map(curve => (
             <button 
               key={curve} 
               onClick={() => onCurveChange(curve as CrossfaderCurve)} 
-              className={`flex-1 py-1 text-[6px] font-black rounded-md transition-all ${crossfaderCurve === curve ? 'bg-[#D0BCFF] text-black shadow-lg' : 'text-gray-600 hover:text-gray-300'}`}
+              className={`flex-1 py-2 text-[10px] font-black rounded-md transition-all m3-touch touch-target ${crossfaderCurve === curve ? 'bg-[#D0BCFF] text-black shadow-lg' : 'text-gray-200 hover:text-white'}`}
             >
               {curve}
             </button>
@@ -360,9 +360,9 @@ const Mixer: React.FC<MixerProps> = ({
 
            {/* Professional Aluminum-style Crossfader Handle */}
            <div 
-             className="absolute top-1/2 -translate-y-1/2 w-20 h-11 bg-[#323038] rounded-md border border-white/20 shadow-[0_12px_24px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center transition-all duration-150 z-10 group-hover:border-[#D0BCFF]/40 active:scale-95 active:shadow-inner"
+             className="absolute top-1/2 -translate-y-1/2 w-24 h-12 bg-[#323038] rounded-md border border-white/20 shadow-[0_12px_24px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center transition-all duration-150 z-10 group-hover:border-[#D0BCFF]/40 active:scale-95 active:shadow-inner"
              style={{ 
-               left: `calc(1rem + ${(crossfader + 1) / 2} * (100% - 2rem - 5rem))`,
+               left: `calc(1rem + ${(crossfader + 1) / 2} * (100% - 2rem - 6rem))`,
              }}
            >
              {/* Tactile Handle Ridges */}
@@ -373,7 +373,7 @@ const Mixer: React.FC<MixerProps> = ({
              </div>
              
              {/* Visual percentage badge (appears on hover) */}
-             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#D0BCFF] text-black text-[9px] font-black px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all transform group-hover:-translate-y-1 pointer-events-none shadow-2xl border border-white/20 uppercase tracking-tighter whitespace-nowrap">
+             <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#D0BCFF] text-black text-xs font-black px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all transform group-hover:-translate-y-1 pointer-events-none shadow-2xl border border-white/20 uppercase tracking-tighter whitespace-nowrap">
                {Math.abs(crossfader) < 0.01 ? '50% Center' : `${Math.round(((crossfader + 1) / 2) * 100)}%`}
              </div>
            </div>
@@ -392,12 +392,12 @@ const Mixer: React.FC<MixerProps> = ({
 
         {/* Labels below the fader as seen in screenshots */}
         <div className="flex justify-between items-center px-1 mt-1 font-black uppercase tracking-[0.25em]">
-           <span className={`text-[7px] transition-colors ${crossfader < -0.8 ? 'text-[#D0BCFF]' : 'text-gray-600'}`}>Deck A</span>
+           <span className={`text-[10px] transition-colors ${crossfader < -0.8 ? 'text-[#D0BCFF]' : 'text-gray-400'}`}>Deck A</span>
            <div className="flex flex-col items-center">
-             <span className={`text-[9px] font-mono transition-all duration-200 ${Math.abs(crossfader) < 0.05 ? 'text-white scale-125 glow-white' : 'text-gray-700'}`}>0</span>
+             <span className={`text-xs font-mono transition-all duration-200 ${Math.abs(crossfader) < 0.05 ? 'text-white scale-125 glow-white' : 'text-gray-400'}`}>0</span>
              <div className={`w-1 h-1 rounded-full transition-colors ${Math.abs(crossfader) < 0.05 ? 'bg-white shadow-[0_0_5px_white]' : 'bg-transparent'}`} />
            </div>
-           <span className={`text-[7px] transition-colors ${crossfader > 0.8 ? 'text-[#F2B8B5]' : 'text-gray-600'}`}>Deck B</span>
+           <span className={`text-[10px] transition-colors ${crossfader > 0.8 ? 'text-[#F2B8B5]' : 'text-gray-400'}`}>Deck B</span>
         </div>
       </div>
     </div>

@@ -729,7 +729,7 @@ const effectNodesRef = useRef<{
   };
 
   return (
-    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-4 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden min-w-[420px]">
+    <div className="m3-card bg-[#1D1B20] border-white/5 flex flex-col gap-4 shadow-2xl transition-all hover:border-[#D0BCFF]/20 relative overflow-hidden w-full min-w-0">
       <div className="absolute top-0 left-0 w-px h-px opacity-0 pointer-events-none overflow-hidden">
         <div id={containerId} />
       </div>
@@ -744,10 +744,10 @@ const effectNodesRef = useRef<{
               <div className="text-4xl font-black" style={{ color }}>{id}</div>
             </div>
             <div className="text-right min-w-0 flex-1 overflow-hidden">
-              <MarqueeText text={state.title || 'Deck Ready'} className="text-sm font-bold text-white uppercase tracking-tight" />
+              <MarqueeText text={state.title || 'Deck Ready'} className="text-base font-bold text-white uppercase tracking-tight" />
               <MarqueeText 
                 text={state.author || (state.sourceType === 'local' ? 'Local Media' : 'Insert Media')} 
-                className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-80" 
+                className="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-80" 
               />
             </div>
           </div>
@@ -758,18 +758,18 @@ const effectNodesRef = useRef<{
                 <div className={`text-3xl font-black mono ${isScanning ? 'animate-pulse text-gray-400' : ''}`} style={!isScanning ? { color } : {}}>
                   {(state.bpm * state.playbackRate).toFixed(1)}
                 </div>
-                <div className="text-[10px] text-gray-500 font-black uppercase">BPM</div>
+                <div className="text-xs text-gray-500 font-black uppercase">BPM</div>
               </div>
-              <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Key: <span className="text-white/80">{state.musicalKey}</span></div>
+              <div className="text-xs text-gray-600 font-black uppercase tracking-widest">Key: <span className="text-white/80">{state.musicalKey}</span></div>
             </div>
-            <button onClick={handleTap} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white">TAP</button>
+            <button onClick={handleTap} className="px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-black uppercase tracking-widest text-gray-200 hover:text-white m3-touch touch-target">TAP</button>
           </div>
 
           <div className="flex items-center justify-center py-1">
             <button
               onClick={togglePlay}
               disabled={!state.isReady}
-              className={`w-20 h-20 rounded-full bg-black border-[3px] flex items-center justify-center transition-all ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_30px_rgba(208,188,255,0.2)]' : 'border-white/10'}`}
+              className={`w-20 h-20 rounded-full bg-black border-[3px] flex items-center justify-center transition-all m3-touch touch-target ${state.playing ? 'border-[#D0BCFF] shadow-[0_0_30px_rgba(208,188,255,0.2)]' : 'border-white/10'}`}
             >
               <span className="material-icons text-4xl text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
             </button>
@@ -783,12 +783,12 @@ const effectNodesRef = useRef<{
           />
 
           <div className="space-y-1">
-            <div className="flex justify-between text-[9px] font-black uppercase text-gray-600 px-1">
+            <div className="flex justify-between text-xs font-black uppercase text-gray-600 px-1">
               <span>Timeline</span>
             <button
                 type="button"
                 onClick={() => setShowRemaining(prev => !prev)}
-                className="mono text-gray-400 hover:text-white transition-colors"
+                className="mono text-gray-300 hover:text-white transition-colors text-sm"
                 title="Toggle time display"
               >
                 {showRemaining
@@ -797,7 +797,7 @@ const effectNodesRef = useRef<{
               </button>
             </div>
             <div 
-              className="h-6 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10"
+              className="h-10 bg-black/50 rounded-lg relative cursor-pointer overflow-hidden border border-white/10 touch-target"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const pct = (e.clientX - rect.left) / rect.width;
@@ -818,7 +818,7 @@ const effectNodesRef = useRef<{
         {/* Improved Pitch / Tempo Fader */}
         <div 
           ref={tempoContainerRef}
-          className="w-12 bg-black/20 rounded-xl border border-white/5 flex flex-col items-center py-4 gap-2 relative group select-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30"
+          className="w-16 bg-black/20 rounded-xl border border-white/5 flex flex-col items-center py-4 gap-2 relative group select-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30 m3-touch"
           onDoubleClick={() => updatePlaybackRate(1.0)}
       onPointerDown={handleTempoPointerDown}
           onPointerMove={handleTempoPointerMove}
@@ -831,7 +831,7 @@ const effectNodesRef = useRef<{
           }}
           title="Click/Drag to Pitch • Scroll for Fine-Tune • Double-click to Reset"
         >
-           <div className="text-[8px] font-black text-gray-500 uppercase tracking-tighter vertical-text h-10 mb-2">Tempo</div>
+           <div className="text-xs font-black text-gray-500 uppercase tracking-tighter vertical-text h-12 mb-2">Tempo</div>
            
            <div className="flex-1 w-full flex justify-center relative py-2">
               <div className="absolute inset-y-2 left-2 flex flex-col justify-between items-center pointer-events-none opacity-20">
@@ -840,15 +840,15 @@ const effectNodesRef = useRef<{
                 ))}
               </div>
 
-              <div className="h-full w-8 relative flex items-center justify-center cursor-ns-resize">
+              <div className="h-full w-10 relative flex items-center justify-center cursor-ns-resize">
                 <div
-                  className="absolute w-10 h-10 bg-[#323038] rounded-md border-2 border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.6)] flex items-center justify-center transition-all duration-75 pointer-events-none z-10"
+                  className="absolute w-12 h-12 bg-[#323038] rounded-md border-2 border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.6)] flex items-center justify-center transition-all duration-75 pointer-events-none z-10"
                   style={{
                     top: `${(1.5 - state.playbackRate) * 100}%`,
                     transform: 'translateY(-50%)'
                   }}
                 >
-                  <div className="w-6 h-[2px] bg-[#D0BCFF] shadow-[0_0_8px_#D0BCFF]" />
+                  <div className="w-7 h-[2px] bg-[#D0BCFF] shadow-[0_0_8px_#D0BCFF]" />
                 </div>
 
                 <input
@@ -865,7 +865,7 @@ const effectNodesRef = useRef<{
            </div>
 
            <div className="flex flex-col items-center gap-0.5 pb-2">
-             <div className={`text-[9px] font-black mono transition-all ${Math.abs(state.playbackRate - 1.0) < 0.001 ? 'text-[#D0BCFF] scale-110' : 'text-gray-500'}`}>
+             <div className={`text-xs font-black mono transition-all ${Math.abs(state.playbackRate - 1.0) < 0.001 ? 'text-[#D0BCFF] scale-110' : 'text-gray-500'}`}>
                 {((state.playbackRate - 1.0) * 100).toFixed(2)}%
              </div>
              <div className={`w-1.5 h-1.5 rounded-full transition-all ${Math.abs(state.playbackRate - 1.0) < 0.001 ? 'bg-[#D0BCFF] shadow-[0_0_8px_#D0BCFF]' : 'bg-transparent'}`} />
@@ -873,34 +873,39 @@ const effectNodesRef = useRef<{
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mt-2">
-        <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-2">
-          <div className="flex justify-between items-center px-1">
-             <div className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Hot Cues</div>
-             <div className="text-[7px] text-gray-700 font-black uppercase">Shift + Click to Clear</div>
-          </div>
-          <div className="grid grid-cols-4 gap-1">
-            {[0, 1, 2, 3].map((i) => (
-              <button 
-                key={i} 
-                onClick={(e) => handleHotCue(i, e.shiftKey)} 
-                className={`h-8 rounded-lg font-black text-[10px] border transition-all ${state.hotCues[i] !== null ? 'text-black' : 'border-white/5 text-gray-700 hover:border-white/20'}`} 
-                style={state.hotCues[i] !== null ? { backgroundColor: CUE_COLORS[i], borderColor: CUE_COLORS[i], boxShadow: `0 0 10px ${CUE_COLORS[i]}44` } : {}}
-              >
-                {i + 1}
-              </button>
-            ))}
+      <details className="collapsible-panel">
+        <summary>Performance Controls</summary>
+        <div className="collapsible-content">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
+              <div className="flex justify-between items-center px-1">
+                 <div className="text-xs text-gray-400 font-black uppercase tracking-widest">Hot Cues</div>
+                 <div className="text-[11px] text-gray-600 font-black uppercase">Shift + Tap to Clear</div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <button 
+                    key={i} 
+                    onClick={(e) => handleHotCue(i, e.shiftKey)} 
+                    className={`h-12 rounded-lg font-black text-sm border transition-all m3-touch touch-target ${state.hotCues[i] !== null ? 'text-black' : 'border-white/5 text-gray-200 hover:border-white/20'}`} 
+                    style={state.hotCues[i] !== null ? { backgroundColor: CUE_COLORS[i], borderColor: CUE_COLORS[i], boxShadow: `0 0 10px ${CUE_COLORS[i]}44` } : {}}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
+              <div className="text-xs text-gray-400 font-black uppercase tracking-widest px-1">Loops</div>
+              <div className="grid grid-cols-4 gap-2">
+                {[2, 4, 8, 16].map((b) => (
+                  <button key={b} onClick={() => handleToggleLoop(b)} className={`h-12 rounded-lg text-sm font-black border transition-all m3-touch touch-target ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/5 text-gray-200 hover:text-white hover:border-white/20'}`}>{b}</button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-2">
-          <div className="text-[9px] text-gray-500 font-black uppercase tracking-widest px-1">Loops</div>
-          <div className="grid grid-cols-4 gap-1">
-            {[2, 4, 8, 16].map((b) => (
-              <button key={b} onClick={() => handleToggleLoop(b)} className={`h-7 rounded-lg text-[10px] font-black border transition-all ${state.loopActive && Math.abs((state.loopEnd - state.loopStart) - b * (60 / state.bpm)) < 0.1 ? 'bg-green-500 text-black border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'border-white/5 text-gray-500 hover:text-white hover:border-white/20'}`}>{b}</button>
-            ))}
-          </div>
-        </div>
-      </div>
+      </details>
 
       {isLoading && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">

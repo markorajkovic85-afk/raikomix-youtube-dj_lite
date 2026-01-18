@@ -60,8 +60,8 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
     <div className="bg-black/40 p-4 rounded-xl border border-white/5 relative z-10 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">FX Engine</p>
-          <p className="text-[11px] font-semibold text-white/80">
+          <p className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">FX Engine</p>
+          <p className="text-sm font-semibold text-white/80">
             {mixedEffect ? 'Mixed effects' : activeEffect ? activeEffect : 'No effect'}
           </p>
         </div>
@@ -70,7 +70,7 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
             <button
               key={option}
               onClick={() => onTargetChange(option)}
-              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition ${
+              className={`px-3 py-2 rounded-full text-xs font-black uppercase tracking-widest transition m3-touch touch-target ${
                 target === option ? 'text-black' : 'text-gray-500'
               }`}
               style={target === option ? { backgroundColor: color } : undefined}
@@ -81,12 +81,12 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {effects.map((fx) => (
           <button
             key={fx.label}
             onClick={() => onEffectToggle(fx.value)}
-            className={`py-2 rounded-lg text-[10px] font-black transition-all border uppercase tracking-tight ${
+            className={`py-3 rounded-lg text-sm font-black transition-all border uppercase tracking-tight m3-touch touch-target ${
               activeEffect === fx.value
                 ? 'bg-white/15 border-white/30 text-white'
                 : 'bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:text-white/50'
@@ -101,10 +101,10 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
       <div className="space-y-3 border-t border-white/5 pt-4">
         <div className="flex justify-between items-center px-1">
           <div>
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Intensity</span>
-            {mixedIntensity && <span className="ml-2 text-[8px] text-white/40 uppercase">Mixed</span>}
+            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">Intensity</span>
+            {mixedIntensity && <span className="ml-2 text-[10px] text-white/40 uppercase">Mixed</span>}
           </div>
-           <span className="text-[9px] font-mono text-white/50">{Math.round(effectIntensity * 100)}%</span>
+           <span className="text-xs font-mono text-white/50">{Math.round(effectIntensity * 100)}%</span>
         </div>
         <div className={`bg-black/20 p-2 rounded-full border border-white/5 ${!activeEffect ? 'opacity-40' : ''}`}>
           <input
@@ -118,7 +118,7 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
               onIntensityChange(0.5);
               showResetToast('FX INTENSITY');
             }}
-            className="w-full accent-white h-2 cursor-pointer"
+            className="w-full accent-white h-12 cursor-pointer"
             style={{ accentColor: color }}
             title="Double-click to reset (50%)"
             disabled={!activeEffect}
@@ -127,10 +127,10 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
 
         <div className="flex justify-between items-center px-1">
           <div>
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Wet / Dry</span>
-            {mixedAmount && <span className="ml-2 text-[8px] text-white/40 uppercase">Mixed</span>}
+            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">Wet / Dry</span>
+            {mixedAmount && <span className="ml-2 text-[10px] text-white/40 uppercase">Mixed</span>}
           </div>
-          <span className="text-[9px] font-mono text-white/50">{Math.round(effectAmount * 100)}%</span>
+          <span className="text-xs font-mono text-white/50">{Math.round(effectAmount * 100)}%</span>
         </div>
         <div className={`bg-black/20 p-2 rounded-full border border-white/5 ${!activeEffect ? 'opacity-40' : ''}`}>
           <input
@@ -144,14 +144,14 @@ const EffectsPanel: React.FC<EffectsPanelProps> = ({
               onAmountChange(0.5);
               showResetToast('FX WET/DRY');
             }}
-            className="w-full accent-white h-2 cursor-pointer"
+            className="w-full accent-white h-12 cursor-pointer"
             style={{ accentColor: color }}
             title="Double-click to reset (50%)"
             disabled={!activeEffect}
           />
         </div>
            {showStreamingNotice && (
-          <p className="text-[9px] text-white/40 uppercase tracking-widest px-1">
+          <p className="text-xs text-white/40 uppercase tracking-widest px-1">
             Streaming FX unavailable
           </p>
         )}
