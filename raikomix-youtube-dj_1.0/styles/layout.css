@@ -331,8 +331,8 @@ quick-mix-fab {
 }
 
 .panel-sheet {
-  --sheet-collapsed: 28vh;
-  --sheet-expanded: 68vh;
+  --sheet-collapsed: 42vh;
+  --sheet-expanded: 82vh;
   position: fixed;
   left: 12px;
   right: 12px;
@@ -344,14 +344,14 @@ quick-mix-fab {
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  height: var(--sheet-collapsed);
+  height: min(var(--sheet-collapsed), calc(100dvh - 160px));
   transition: height var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
   z-index: 40;
   box-shadow: var(--md-sys-elevation-4);
 }
 
 .panel-sheet[data-expanded='true'] {
-  height: var(--sheet-expanded);
+ height: min(var(--sheet-expanded), calc(100dvh - 160px));
 }
 
 .panel-sheet__header {
