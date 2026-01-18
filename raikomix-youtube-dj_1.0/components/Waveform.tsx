@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface WaveformProps {
@@ -66,7 +65,14 @@ const Waveform: React.FC<WaveformProps> = ({ isPlaying, volume, color, playbackR
   };
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(draw);
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    if (isPlaying) {
+      requestRef.current = requestAnimationFrame(draw);
+      return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      };
+    }
+    draw();
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
