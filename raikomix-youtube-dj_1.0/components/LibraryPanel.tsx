@@ -27,6 +27,7 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
   const [importStatus, setImportStatus] = useState('');
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
+  const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,6 +154,10 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
     }
   };
 
+  const toggleExpandedTrack = (id: string) => {
+    setExpandedTrackId((prev) => (prev === id ? null : id));
+  };
+
   const currentPl = activePl ? playlists.find(p => p.id === activePl) : null;
   const filtered = library.filter(t => 
     (!currentPl || currentPl.trackIds.includes(t.id)) &&
@@ -266,26 +271,49 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
         ))}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 scrollbar-hide">
+      {/* UX rationale: tighten vertical density, keep actions visible, and allow tap-to-expand for full titles/artists.
+          This improves readability and fast scrolling on small screens without hiding critical metadata. */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center">
             <span className="material-symbols-outlined text-4xl mb-2">inventory_2</span>
             <p className="text-[10px] font-black uppercase tracking-widest">Library Empty</p>
           </div>
         ) : filtered.map(t => (
-          <div key={t.id} className={`group flex gap-3 items-center p-3 rounded-xl border transition-all relative ${selectedTracks.has(t.id) ? 'bg-[#D0BCFF]/10 border-[#D0BCFF]/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}>
-            <input type="checkbox" checked={selectedTracks.has(t.id)} onChange={() => toggleSelect(t.id)} className="w-4 h-4 accent-[#D0BCFF] shrink-0" />
+          <div key={t.id} className={`group flex gap-2 items-center p-2 rounded-xl border transition-all relative ${selectedTracks.has(t.id) ? 'bg-[#D0BCFF]/10 border-[#D0BCFF]/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}>
+            <input type="checkbox" checked={selectedTracks.has(t.id)} onChange={() => toggleSelect(t.id)} className="w-3.5 h-3.5 accent-[#D0BCFF] shrink-0" />
             <div className="relative shrink-0">
-              <img src={t.thumbnailUrl} alt="" className="w-14 h-10 rounded-lg object-cover shadow-lg" />
+              <img src={t.thumbnailUrl} alt="" className="w-12 h-9 rounded-lg object-cover shadow-lg" />
               {t.sourceType === 'local' && (
                 <div className="absolute -top-1 -right-1 bg-blue-500 border border-black w-2.5 h-2.5 rounded-full" title="Local File" />
               )}
             </div>
             <div className="flex-1 min-w-0" onDoubleClick={() => setEditingTrack(t)}>
-              <div className="text-[11px] font-bold text-white truncate leading-tight group-hover:text-[#D0BCFF] transition-colors">{t.title}</div>
-              <div className="text-[9px] text-gray-500 truncate uppercase font-bold tracking-tighter">{t.author}</div>
+              <button
+                type="button"
+                onClick={() => toggleExpandedTrack(t.id)}
+                className="w-full text-left focus:outline-none"
+                aria-expanded={expandedTrackId === t.id}
+                aria-label={expandedTrackId === t.id ? `Collapse ${t.title}` : `Expand ${t.title}`}
+              >
+                <div className={`text-[11px] font-bold text-white leading-tight transition-colors ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'} group-hover:text-[#D0BCFF]`}>
+                  {t.title}
+                </div>
+                <div className={`text-[9px] text-gray-500 uppercase font-bold tracking-tighter ${expandedTrackId === t.id ? 'whitespace-normal break-words' : 'truncate'}`}>
+                  {t.author}
+                </div>
+              </button>
             </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => toggleExpandedTrack(t.id)}
+                className="w-6 h-6 rounded-lg bg-white/5 text-gray-300 flex items-center justify-center hover:bg-white/15 transition-all"
+                aria-label={expandedTrackId === t.id ? `Collapse ${t.title}` : `Expand ${t.title}`}
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {expandedTrackId === t.id ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
               <button
                 onClick={() => onAddToQueue(t)}
                 className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"
