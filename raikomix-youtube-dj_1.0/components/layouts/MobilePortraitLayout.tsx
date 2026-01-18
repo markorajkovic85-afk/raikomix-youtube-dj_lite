@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 
 export type MobilePanelTab = 'LIBRARY' | 'QUEUE' | 'EFFECTS';
 
@@ -43,40 +43,13 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   utilityBar,
   compactMixer
 }) => {
-  const swipeStartX = useRef<number | null>(null);
   const [quickMixOpen, setQuickMixOpen] = useState(false);
-
-  const isSwipeExcludedTarget = (target: EventTarget | null) => {
-    if (!(target instanceof HTMLElement)) return true;
-    return Boolean(
-      target.closest(
-        'button, a, input, select, textarea, summary, details, [role="button"], [data-swipe-exclude="true"]'
-      )
-    );
-  };
 
   useEffect(() => {
     if (sheetOpen) {
       setQuickMixOpen(false);
     }
   }, [sheetOpen]);
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || navTab === 'MIXER') return;
-    if (isSwipeExcludedTarget(event.target)) return;
-    swipeStartX.current = event.clientX;
-  };
-
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (swipeStartX.current === null || navTab === 'MIXER') return;
-    const deltaX = event.clientX - swipeStartX.current;
-    if (Math.abs(deltaX) > 60) {
-      const nextDeck = deltaX < 0 ? 'B' : 'A';
-      onDeckFocusChange(nextDeck);
-      onNavTabChange(nextDeck === 'A' ? 'DECK_A' : 'DECK_B');
-    }
-    swipeStartX.current = null;
-  };
 
   return (
     <div className="mobile-layout" id="main-content">
@@ -119,9 +92,6 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
 
           <div
             className="deck-stack"
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
           >
             <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
               {deckA}
