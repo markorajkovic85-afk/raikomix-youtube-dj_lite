@@ -20,7 +20,6 @@ import {
 import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
-import { useMediaQuery } from './hooks/useMediaQuery';
 import './styles/layout.css';
 
 interface ErrorBoundaryProps {
