@@ -1,4 +1,4 @@
-import React, { ReactNode, useRef } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
 export type MobilePanelTab = 'LIBRARY' | 'QUEUE' | 'EFFECTS';
 
@@ -44,6 +44,13 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   compactMixer
 }) => {
   const swipeStartX = useRef<number | null>(null);
+  const [quickMixOpen, setQuickMixOpen] = useState(false);
+
+  useEffect(() => {
+    if (sheetOpen) {
+      setQuickMixOpen(false);
+    }
+  }, [sheetOpen]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     swipeStartX.current = event.clientX;
@@ -176,7 +183,46 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
         </div>
       )}
 
- {compactMixer && navTab === 'MIXER' && !sheetOpen && <div className="mobile-mixer-bar">{compactMixer}</div>}
+ {compactMixer && !sheetOpen && (
+        <>
+          <button
+            type="button"
+            className="quick-mix-fab m3-touch touch-target"
+            onClick={() => setQuickMixOpen((open) => !open)}
+            aria-pressed={quickMixOpen}
+            aria-label={quickMixOpen ? 'Close quick mix' : 'Open quick mix'}
+          >
+            <span className="material-icons text-base">tune</span>
+          </button>
+          {quickMixOpen && (
+            <div className="quick-mix-overlay" role="dialog" aria-label="Quick mix">
+              <button
+                type="button"
+                className="quick-mix-backdrop"
+                aria-label="Close quick mix"
+                onClick={() => setQuickMixOpen(false)}
+              />
+              <div className="quick-mix-modal">
+                <div className="quick-mix-header">
+                  <div>
+                    <p className="m3-section-title">Quick Mix</p>
+                    <p className="text-xs text-white/70">Crossfader + Master</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="utility-button m3-touch touch-target"
+                    onClick={() => setQuickMixOpen(false)}
+                    aria-label="Close quick mix"
+                  >
+                    <span className="material-icons text-base">close</span>
+                  </button>
+                </div>
+                {compactMixer}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <nav className="mobile-bottom-nav" aria-label="Primary">
         {([
