@@ -336,7 +336,8 @@ quick-mix-fab {
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(96px + env(safe-area-inset-bottom));
+  /* Hotfix: keep sheet above the dock (mix strip + bottom nav). */
+  bottom: calc(168px + env(safe-area-inset-bottom));
   margin: 0 auto;
   max-width: 960px;
   background: var(--md-sys-color-surface-container);
@@ -344,14 +345,14 @@ quick-mix-fab {
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  height: min(var(--sheet-collapsed), calc(100dvh - 160px));
+  height: min(var(--sheet-collapsed), calc(100dvh - 240px));
   transition: height var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
   z-index: 40;
   box-shadow: var(--md-sys-elevation-4);
 }
 
 .panel-sheet[data-expanded='true'] {
- height: min(var(--sheet-expanded), calc(100dvh - 160px));
+  height: min(var(--sheet-expanded), calc(100dvh - 240px));
 }
 
 .panel-sheet__header {
@@ -374,7 +375,11 @@ quick-mix-fab {
 .panel-sheet__tabs {
   display: inline-flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  flex: 1;
 }
 
 .panel-tab {
@@ -387,6 +392,7 @@ quick-mix-fab {
   border: 1px solid transparent;
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
 }
 
 .panel-tab.is-active {
@@ -398,6 +404,7 @@ quick-mix-fab {
 .panel-sheet__actions {
   display: inline-flex;
   gap: 6px;
+  flex: none;
 }
 
 .collapsible-panel {
