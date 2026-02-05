@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode } from 'react';
 
 export type MobilePanelTab = 'LIBRARY' | 'QUEUE' | 'EFFECTS';
 
@@ -43,13 +43,19 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   utilityBar,
   compactMixer
 }) => {
-  const [quickMixOpen, setQuickMixOpen] = useState(false);
-
-  useEffect(() => {
-    if (sheetOpen) {
-      setQuickMixOpen(false);
-    }
-  }, [sheetOpen]);
+  const deckFrameStyle = (deck: 'A' | 'B'): React.CSSProperties => {
+    const isFocused = deckFocus === deck;
+    const accent = deck === 'A' ? 'var(--rm-deck-a, #D0BCFF)' : 'var(--rm-deck-b, #F2B8B5)';
+    const glow = deck === 'A' ? 'rgba(208,188,255,0.18)' : 'rgba(242,184,181,0.18)';
+    return {
+      borderRadius: 16,
+      padding: 8,
+      border: isFocused ? `2px solid ${accent}` : '1px solid rgba(255,255,255,0.08)',
+      boxShadow: isFocused ? `0 0 22px ${glow}` : undefined,
+      opacity: isFocused ? 1 : 0.82,
+      background: 'rgba(0,0,0,0.18)'
+    };
+  };
 
   return (
     <div className="mobile-layout" id="main-content">
@@ -64,63 +70,54 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
       </header>
 
       <div className="mobile-main">
-        <div hidden={navTab === 'MIXER'} aria-hidden={navTab === 'MIXER'}>
-          <div className="deck-tabs" role="tablist" aria-label="Deck switcher">
-            <button
-              type="button"
-              onClick={() => {
-                onDeckFocusChange('A');
-                onNavTabChange('DECK_A');
-              }}
-              className={`deck-tab m3-touch touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
-              aria-pressed={deckFocus === 'A'}
-            >
-              Deck A
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onDeckFocusChange('B');
-                onNavTabChange('DECK_B');
-              }}
-              className={`deck-tab m3-touch touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
-              aria-pressed={deckFocus === 'B'}
-            >
-              Deck B
-            </button>
-          </div>
-
-          <div
-            className="deck-stack"
+        <div className="deck-tabs" role="tablist" aria-label="Deck focus">
+          <button
+            type="button"
+            onClick={() => {
+              onDeckFocusChange('A');
+              onNavTabChange('DECK_A');
+            }}
+            className={`deck-tab m3-touch touch-target ${deckFocus === 'A' ? 'is-active' : ''}`}
+            aria-pressed={deckFocus === 'A'}
           >
-            <div className={`deck-slot ${deckFocus === 'A' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'A'}>
-              {deckA}
-            </div>
-            <div className={`deck-slot ${deckFocus === 'B' ? '' : 'is-hidden'}`} aria-hidden={deckFocus !== 'B'}>
-              {deckB}
-            </div>
+            Deck A
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onDeckFocusChange('B');
+              onNavTabChange('DECK_B');
+            }}
+            className={`deck-tab m3-touch touch-target ${deckFocus === 'B' ? 'is-active' : ''}`}
+            aria-pressed={deckFocus === 'B'}
+          >
+            Deck B
+          </button>
+        </div>
+
+        <div className="deck-stack" aria-label="Decks">
+          <div className="deck-slot" style={deckFrameStyle('A')} aria-label="Deck A">
+            {deckA}
+          </div>
+          <div className="deck-slot" style={deckFrameStyle('B')} aria-label="Deck B">
+            {deckB}
           </div>
         </div>
 
-        {navTab === 'MIXER' && (
-          <section className="space-y-3" aria-label="Mixer">
-            {mixer}
-            <details className="collapsible-panel">
-              <summary>Effects</summary>
-              <div className="collapsible-content">{effectsPanel}</div>
-            </details>
-          </section>
-        )}
+        {/* Keep existing mixer node mounted for now (used by tablet/landscape and future pro views). */}
+        <div className="sr-only" aria-hidden="true">
+          {mixer}
+        </div>
       </div>
 
       {sheetOpen && (
-        <div className="panel-sheet elevation-4" data-expanded={sheetExpanded} role="dialog" aria-label="Library and queue">
+        <div className="panel-sheet elevation-4" data-expanded={sheetExpanded} role="dialog" aria-label="Library, queue and effects">
           <div className="flex justify-center pt-3">
             <div className="panel-sheet__handle" aria-hidden="true" />
           </div>
           <div className="panel-sheet__header">
             <div className="panel-sheet__tabs">
-              {(['LIBRARY', 'QUEUE'] as const).map((tab) => (
+              {(['LIBRARY', 'QUEUE', 'EFFECTS'] as const).map(tab => (
                 <button
                   key={tab}
                   type="button"
@@ -128,7 +125,7 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
                   className={`panel-tab m3-touch touch-target ${sheetTab === tab ? 'is-active' : ''}`}
                   aria-pressed={sheetTab === tab}
                 >
-                  {tab === 'LIBRARY' ? 'Library' : 'Queue'}
+                  {tab === 'LIBRARY' ? 'Library' : tab === 'QUEUE' ? 'Queue' : 'FX'}
                 </button>
               ))}
             </div>
@@ -158,49 +155,17 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
             <div className={`panel-sheet__panel ${sheetTab === 'QUEUE' ? '' : 'is-hidden'}`}>
               {queuePanel}
             </div>
+            <div className={`panel-sheet__panel ${sheetTab === 'EFFECTS' ? '' : 'is-hidden'}`}>
+              {effectsPanel}
+            </div>
           </div>
         </div>
       )}
 
- {compactMixer && !sheetOpen && (
-        <>
-          <button
-            type="button"
-            className="quick-mix-fab m3-touch touch-target"
-            onClick={() => setQuickMixOpen((open) => !open)}
-            aria-pressed={quickMixOpen}
-            aria-label={quickMixOpen ? 'Close quick mix' : 'Open quick mix'}
-          >
-            <span className="material-icons text-base">tune</span>
-          </button>
-          {quickMixOpen && (
-            <div className="quick-mix-overlay" role="dialog" aria-label="Quick mix">
-              <button
-                type="button"
-                className="quick-mix-backdrop"
-                aria-label="Close quick mix"
-                onClick={() => setQuickMixOpen(false)}
-              />
-              <div className="quick-mix-modal">
-                <div className="quick-mix-header">
-                  <div>
-                    <p className="m3-section-title">Quick Mix</p>
-                    <p className="text-xs text-white/70">Crossfader + Master</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="utility-button m3-touch touch-target"
-                    onClick={() => setQuickMixOpen(false)}
-                    aria-label="Close quick mix"
-                  >
-                    <span className="material-icons text-base">close</span>
-                  </button>
-                </div>
-                {compactMixer}
-              </div>
-            </div>
-          )}
-        </>
+      {compactMixer && (
+        <div className="mobile-mixer-bar" role="region" aria-label="Mix strip">
+          {compactMixer}
+        </div>
       )}
 
       <nav className="mobile-bottom-nav" aria-label="Primary">
@@ -208,8 +173,8 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
           { id: 'LIBRARY', label: 'Library', icon: 'library_music' },
           { id: 'DECK_A', label: 'Deck A', icon: 'album' },
           { id: 'DECK_B', label: 'Deck B', icon: 'graphic_eq' },
-          { id: 'MIXER', label: 'Mixer', icon: 'tune' }
-        ] as const).map((item) => (
+          { id: 'MIXER', label: 'FX', icon: 'auto_fix_high' }
+        ] as const).map(item => (
           <button
             key={item.id}
             type="button"
