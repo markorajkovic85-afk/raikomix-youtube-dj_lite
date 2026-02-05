@@ -65,6 +65,18 @@ button > * {
   z-index: 1;
 }
 
+/* PR5: Mobile dock contract (single source of truth). */
+:root {
+  /* Fixed bottom nav visual height (excluding safe area). */
+  --rm-mobile-nav-h: 72px;
+
+  /* Total reserved space for bottom dock: mix strip + bottom nav (excluding safe area). */
+  --rm-mobile-dock-h: 168px;
+
+  /* Reserve space at the top for headers when clamping sheet max height. */
+  --rm-mobile-top-reserve: 72px;
+}
+
 .mobile-layout {
   flex: 1;
   min-height: 0;
@@ -94,7 +106,8 @@ button > * {
   flex-direction: column;
   gap: 12px;
   overflow: auto;
-  padding-bottom: calc(168px + env(safe-area-inset-bottom));
+  /* PR5: Reserve space for fixed dock elements. */
+  padding-bottom: calc(var(--rm-mobile-dock-h) + env(safe-area-inset-bottom));
 }
 
 .mobile-header {
@@ -214,7 +227,7 @@ button > * {
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: calc(72px + env(safe-area-inset-bottom));
+  bottom: calc(var(--rm-mobile-nav-h) + env(safe-area-inset-bottom));
   padding: 12px;
   border-radius: 20px;
   background: var(--md-sys-color-surface-container);
@@ -241,7 +254,7 @@ button > * {
 quick-mix-fab {
   position: fixed;
   right: 18px;
-  bottom: calc(88px + env(safe-area-inset-bottom));
+  bottom: calc(var(--rm-mobile-nav-h) + 16px + env(safe-area-inset-bottom));
   width: 52px;
   height: 52px;
   border-radius: 18px;
@@ -272,7 +285,7 @@ quick-mix-fab {
 
 .quick-mix-modal {
   position: relative;
-  margin: 0 16px calc(96px + env(safe-area-inset-bottom));
+  margin: 0 16px calc(var(--rm-mobile-nav-h) + 24px + env(safe-area-inset-bottom));
   padding: 16px;
   border-radius: 22px;
   background: var(--md-sys-color-surface-container);
@@ -336,8 +349,8 @@ quick-mix-fab {
   position: fixed;
   left: 12px;
   right: 12px;
-  /* Hotfix: keep sheet above the dock (mix strip + bottom nav). */
-  bottom: calc(168px + env(safe-area-inset-bottom));
+  /* PR5: sheet always lives above the dock (mix strip + bottom nav). */
+  bottom: calc(var(--rm-mobile-dock-h) + env(safe-area-inset-bottom));
   margin: 0 auto;
   max-width: 960px;
   background: var(--md-sys-color-surface-container);
@@ -345,14 +358,20 @@ quick-mix-fab {
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  height: min(var(--sheet-collapsed), calc(100dvh - 240px));
+  height: min(
+    var(--sheet-collapsed),
+    calc(100dvh - (var(--rm-mobile-dock-h) + var(--rm-mobile-top-reserve)))
+  );
   transition: height var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
   z-index: 40;
   box-shadow: var(--md-sys-elevation-4);
 }
 
 .panel-sheet[data-expanded='true'] {
-  height: min(var(--sheet-expanded), calc(100dvh - 240px));
+  height: min(
+    var(--sheet-expanded),
+    calc(100dvh - (var(--rm-mobile-dock-h) + var(--rm-mobile-top-reserve)))
+  );
 }
 
 .panel-sheet__header {
