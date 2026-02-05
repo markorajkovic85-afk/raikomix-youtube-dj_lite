@@ -48,27 +48,20 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   compactMixer
 }) => {
   const deckFrameStyle = (deck: 'A' | 'B'): React.CSSProperties => {
-    const isFocused = deckFocus === deck;
     const accent = deck === 'A' ? 'var(--rm-deck-a, #D0BCFF)' : 'var(--rm-deck-b, #F2B8B5)';
     const glow = deck === 'A' ? 'rgba(208,188,255,0.18)' : 'rgba(242,184,181,0.18)';
     return {
-      borderRadius: 16,
-      padding: 8,
-      border: isFocused ? `2px solid ${accent}` : '1px solid rgba(255,255,255,0.08)',
-      boxShadow: isFocused ? `0 0 22px ${glow}` : undefined,
-      opacity: isFocused ? 1 : 0.82,
-      background: 'rgba(0,0,0,0.18)'
-    };
+      '--deck-accent': accent,
+      '--deck-glow': glow
+    } as React.CSSProperties;
   };
 
   return (
     <div className="mobile-layout" id="main-content">
       <header className="mobile-top-bar">
-        <div>
-          <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-[0.3em]">
-            RaikoMix
-          </p>
-          <p className="text-base font-semibold">Mobile DJ Console</p>
+        <div className="mobile-top-bar__title">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em]">RaikoMix</p>
+          <p className="text-sm font-semibold">Performance View</p>
         </div>
         <div className="utility-bar">{utilityBar}</div>
       </header>
@@ -100,10 +93,18 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
         </div>
 
         <div className="deck-stack" aria-label="Decks">
-          <div className="deck-slot" style={deckFrameStyle('A')} aria-label="Deck A">
+          <div
+            className={`deck-slot deck-slot--frame ${deckFocus === 'A' ? 'is-focused' : 'is-secondary'}`}
+            style={deckFrameStyle('A')}
+            aria-label="Deck A"
+          >
             {deckA}
           </div>
-          <div className="deck-slot" style={deckFrameStyle('B')} aria-label="Deck B">
+          <div
+            className={`deck-slot deck-slot--frame ${deckFocus === 'B' ? 'is-focused' : 'is-secondary'}`}
+            style={deckFrameStyle('B')}
+            aria-label="Deck B"
+          >
             {deckB}
           </div>
         </div>
