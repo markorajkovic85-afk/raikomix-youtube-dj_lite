@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-
-export type MobilePanelTab = 'LIBRARY' | 'QUEUE' | 'EFFECTS';
+import type { SheetRoute } from '../../types/ui';
+import MobileBottomSheet from '../mobile/MobileBottomSheet';
 
 interface MobilePortraitLayoutProps {
   deckA: ReactNode;
@@ -11,14 +11,16 @@ interface MobilePortraitLayoutProps {
   navTab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER';
   onNavTabChange: (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => void;
   sheetOpen: boolean;
-  sheetTab: MobilePanelTab;
-  onSheetTabChange: (tab: MobilePanelTab) => void;
+  sheetRoute: SheetRoute;
+  onSheetRouteChange: (route: SheetRoute) => void;
   onSheetToggle: (open: boolean) => void;
   sheetExpanded: boolean;
   onSheetExpandedToggle: () => void;
   libraryPanel: ReactNode;
   queuePanel: ReactNode;
   effectsPanel: ReactNode;
+  padsPanel: ReactNode;
+  settingsPanel: ReactNode;
   utilityBar?: ReactNode;
   compactMixer?: ReactNode;
 }
@@ -32,14 +34,16 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
   navTab,
   onNavTabChange,
   sheetOpen,
-  sheetTab,
-  onSheetTabChange,
+  sheetRoute,
+  onSheetRouteChange,
   onSheetToggle,
   sheetExpanded,
   onSheetExpandedToggle,
   libraryPanel,
   queuePanel,
   effectsPanel,
+  padsPanel,
+  settingsPanel,
   utilityBar,
   compactMixer
 }) => {
@@ -110,57 +114,22 @@ const MobilePortraitLayout: React.FC<MobilePortraitLayoutProps> = ({
         </div>
       </div>
 
-      {sheetOpen && (
-        <div className="panel-sheet elevation-4" data-expanded={sheetExpanded} role="dialog" aria-label="Library, queue and effects">
-          <div className="flex justify-center pt-3">
-            <div className="panel-sheet__handle" aria-hidden="true" />
-          </div>
-          <div className="panel-sheet__header">
-            <div className="panel-sheet__tabs">
-              {(['LIBRARY', 'QUEUE', 'EFFECTS'] as const).map(tab => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => onSheetTabChange(tab)}
-                  className={`panel-tab m3-touch touch-target ${sheetTab === tab ? 'is-active' : ''}`}
-                  aria-pressed={sheetTab === tab}
-                >
-                  {tab === 'LIBRARY' ? 'Library' : tab === 'QUEUE' ? 'Queue' : 'FX'}
-                </button>
-              ))}
-            </div>
-            <div className="panel-sheet__actions">
-              <button
-                type="button"
-                onClick={onSheetExpandedToggle}
-                className="utility-button m3-touch touch-target"
-                aria-label={sheetExpanded ? 'Collapse panel' : 'Expand panel'}
-              >
-                <span className="material-icons text-base">{sheetExpanded ? 'expand_more' : 'expand_less'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSheetToggle(false)}
-                className="utility-button m3-touch touch-target"
-                aria-label="Close panel"
-              >
-                <span className="material-icons text-base">close</span>
-              </button>
-            </div>
-          </div>
-          <div className="panel-sheet__body">
-            <div className={`panel-sheet__panel ${sheetTab === 'LIBRARY' ? '' : 'is-hidden'}`}>
-              {libraryPanel}
-            </div>
-            <div className={`panel-sheet__panel ${sheetTab === 'QUEUE' ? '' : 'is-hidden'}`}>
-              {queuePanel}
-            </div>
-            <div className={`panel-sheet__panel ${sheetTab === 'EFFECTS' ? '' : 'is-hidden'}`}>
-              {effectsPanel}
-            </div>
-          </div>
-        </div>
-      )}
+      <MobileBottomSheet
+        open={sheetOpen}
+        route={sheetRoute}
+        onRouteChange={onSheetRouteChange}
+        onOpenChange={onSheetToggle}
+        expanded={sheetExpanded}
+        onExpandedToggle={onSheetExpandedToggle}
+        panels={{
+          library: libraryPanel,
+          queue: queuePanel,
+          fx: effectsPanel,
+          pads: padsPanel,
+          settings: settingsPanel
+        }}
+        ariaLabel="Library, queue, FX, pads and settings"
+      />
 
       {compactMixer && (
         <div className="mobile-mixer-bar" role="region" aria-label="Mix strip">
