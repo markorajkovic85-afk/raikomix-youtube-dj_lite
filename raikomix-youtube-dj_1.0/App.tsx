@@ -183,17 +183,18 @@ const App: React.FC = () => {
     if (layoutMode === 'portrait') {
       setMobileSheetExpanded(false);
       setEffectsDrawerOpen(false);
-      if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
     }
   }, [layoutMode, mobileSheetTab]);
 
   useEffect(() => {
     if (layoutMode !== 'portrait') return;
-    if (mobileNavTab === 'LIBRARY') {
+
+    if (mobileNavTab === 'LIBRARY' || mobileNavTab === 'MIXER') {
       setSheetOpen(true);
     } else {
       setSheetOpen(false);
     }
+
     if (mobileNavTab === 'DECK_A') setFocusedDeck('A');
     if (mobileNavTab === 'DECK_B') setFocusedDeck('B');
   }, [layoutMode, mobileNavTab]);
@@ -520,20 +521,40 @@ const App: React.FC = () => {
 
   const handleMobileNavTabChange = (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => {
     setMobileNavTab(tab);
-    if (tab === 'DECK_A') setFocusedDeck('A');
-    if (tab === 'DECK_B') setFocusedDeck('B');
+
+    if (tab === 'DECK_A') {
+      setFocusedDeck('A');
+      setSheetOpen(false);
+      return;
+    }
+
+    if (tab === 'DECK_B') {
+      setFocusedDeck('B');
+      setSheetOpen(false);
+      return;
+    }
+
     if (tab === 'LIBRARY') {
       setSheetOpen(true);
       setMobileSheetExpanded(true);
       setMobileSheetTab('LIBRARY');
       setSheetRoute('library');
+      return;
     }
-    if (tab !== 'LIBRARY') setSheetOpen(false);
+
+    // Portrait "Mixer" becomes performance-safe FX access (decks stay visible)
+    if (tab === 'MIXER') {
+      setSheetOpen(true);
+      setMobileSheetExpanded(false);
+      setMobileSheetTab('EFFECTS');
+      setSheetRoute('fx');
+      return;
+    }
   };
 
   const handleMobileSheetToggle = (open: boolean) => {
     setSheetOpen(open);
-    if (!open && mobileNavTab === 'LIBRARY') {
+    if (!open && (mobileNavTab === 'LIBRARY' || mobileNavTab === 'MIXER')) {
       setMobileNavTab(focusedDeck === 'B' ? 'DECK_B' : 'DECK_A');
     }
   };
@@ -544,6 +565,10 @@ const App: React.FC = () => {
       onCrossfaderChange={setCrossfader}
       masterVolume={masterVolume}
       onMasterVolumeChange={setMasterVolume}
+      deckAVolume={deckAVolume}
+      onDeckAVolumeChange={setDeckAVolume}
+      deckBVolume={deckBVolume}
+      onDeckBVolumeChange={setDeckBVolume}
     />
   );
 
