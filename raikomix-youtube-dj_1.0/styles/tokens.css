@@ -1,34 +1,45 @@
+/* RaikoMix design tokens (PR1: define only; PR2+ will apply broadly) */
 
 :root {
-  /* MD3 Dark Theme (Primary Palette) */
-  --md-sys-color-primary: #D0BCFF;
-  --md-sys-color-on-primary: #381E72;
-  --md-sys-color-primary-container: #4F378B;
-  --md-sys-color-on-primary-container: #EADDFF;
-  
-  --md-sys-color-secondary: #CCC2DC;
-  --md-sys-color-on-secondary: #332D41;
-  --md-sys-color-secondary-container: #4A4458;
-  --md-sys-color-on-secondary-container: #E8DEF8;
+  /* spacing */
+  --rm-s-1: 4px;
+  --rm-s-2: 8px;
+  --rm-s-3: 12px;
+  --rm-s-4: 16px;
+  --rm-s-5: 24px;
+  --rm-s-6: 32px;
 
-  --md-sys-color-surface: #141218;
-  --md-sys-color-surface-container: #1D1B20;
-  --md-sys-color-surface-container-high: #2B2930;
-  --md-sys-color-on-surface: #E6E1E5;
-  --md-sys-color-on-surface-variant: #CAC4D0;
-  
-  --md-sys-color-outline: #938F99;
-  --md-sys-color-error: #F2B8B5;
+  /* radii */
+  --rm-r-1: 8px;
+  --rm-r-2: 12px;
+  --rm-r-3: 16px;
 
-  /* Performance Constants */
-  --deck-a-glow: 0 0 20px rgba(208, 188, 255, 0.2);
-  --deck-b-glow: 0 0 20px rgba(242, 184, 181, 0.2);
+  /* typography */
+  --rm-t-label: 12px;
+  --rm-t-body: 14px;
+  --rm-t-title: 16px;
+  --rm-t-time: 24px;
+
+  /* neutrals (club legible) */
+  --rm-bg-0: #0b0d10;
+  --rm-bg-1: #10141a;
+  --rm-surface: rgba(255, 255, 255, 0.06);
+  --rm-stroke: rgba(255, 255, 255, 0.08);
+  --rm-text-1: rgba(255, 255, 255, 0.92);
+  --rm-text-2: rgba(255, 255, 255, 0.7);
+
+  /* accents */
+  --rm-deck-a: #d0bcff;
+  --rm-deck-b: #f2b8b5;
+  --rm-accent: #d0bcff;
 }
 
-[data-theme='light'] {
-  --md-sys-color-primary: #6750A4;
-  --md-sys-color-on-primary: #FFFFFF;
-  --md-sys-color-surface: #FEF7FF;
-  --md-sys-color-surface-container: #F3EDF7;
-  --md-sys-color-on-surface: #1C1B1F;
+/* Optional theme hooks; the app sets data-theme on .app-shell */
+.app-shell[data-theme='light'] {
+  --rm-bg-0: #f6f7fb;
+  --rm-bg-1: #ffffff;
+  --rm-surface: rgba(0, 0, 0, 0.05);
+  --rm-stroke: rgba(0, 0, 0, 0.08);
+  --rm-text-1: rgba(0, 0, 0, 0.9);
+  --rm-text-2: rgba(0, 0, 0, 0.65);
 }

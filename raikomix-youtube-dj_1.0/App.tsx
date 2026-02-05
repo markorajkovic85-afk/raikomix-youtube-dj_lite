@@ -11,7 +11,6 @@ import TabletLayout from './components/layouts/TabletLayout';
 import CompactMixer from './components/CompactMixer';
 import {
   PlayerState,
-  DeckId,
   CrossfaderCurve,
   QueueItem,
   LibraryTrack,
@@ -19,6 +18,8 @@ import {
   TrackSourceType,
   EffectType
 } from './types';
+import type { DeckId as PlayerDeckId } from './types';
+import type { DeckId as UIDeckId, SheetRoute, UIMode } from './types/ui';
 import {
   loadLibrary,
   saveLibrary,
@@ -32,7 +33,20 @@ import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
 import { useAutoDj } from './hooks/useAutoDj';
+import './styles/tokens.css';
 import './styles/layout.css';
+
+const tabToRoute = (tab: MobilePanelTab): SheetRoute => {
+  switch (tab) {
+    case 'QUEUE':
+      return 'queue';
+    case 'EFFECTS':
+      return 'fx';
+    case 'LIBRARY':
+    default:
+      return 'library';
+  }
+};
 
 const App: React.FC = () => {
   const [library, setLibrary] = useState<LibraryTrack[]>(() => loadLibrary());
@@ -58,10 +72,15 @@ const App: React.FC = () => {
 
   const [deckAEq, setDeckAEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
   const [deckBEq, setDeckBEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  // PR1: global mobile UI state (used more deeply in PR2+)
+  const [focusedDeck, setFocusedDeck] = useState<UIDeckId>('A');
+  const [uiMode, setUiMode] = useState<UIMode>('basic');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetRoute, setSheetRoute] = useState<SheetRoute>('library');
+
   const [mobileSheetTab, setMobileSheetTab] = useState<MobilePanelTab>('LIBRARY');
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
-  const [mobileDeckFocus, setMobileDeckFocus] = useState<'A' | 'B'>('A');
   const [mobileNavTab, setMobileNavTab] = useState<'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER'>('DECK_A');
   const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
   const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
@@ -81,7 +100,7 @@ const App: React.FC = () => {
   });
 
   const handleLoadVideo = useCallback(
-    (videoId: string, url: string, deck: DeckId, sourceType: TrackSourceType = 'youtube', title?: string, author?: string) => {
+    (videoId: string, url: string, deck: PlayerDeckId, sourceType: TrackSourceType = 'youtube', title?: string, author?: string) => {
       const ref = deck === 'A' ? deckARef : deckBRef;
       if (ref.current) {
         ref.current.loadVideo(url, sourceType, { title, author });
@@ -148,8 +167,13 @@ const App: React.FC = () => {
   }, [queue]);
 
   useEffect(() => {
+    // Keep "route" in sync with current mobile sheet tab
+    setSheetRoute(tabToRoute(mobileSheetTab));
+  }, [mobileSheetTab]);
+
+  useEffect(() => {
     if (layoutMode === 'tablet') {
-      setMobileSheetOpen(false);
+      setSheetOpen(false);
       setEffectsDrawerOpen(false);
     }
     if (layoutMode === 'landscape') {
@@ -166,17 +190,17 @@ const App: React.FC = () => {
   useEffect(() => {
     if (layoutMode !== 'portrait') return;
     if (mobileNavTab === 'LIBRARY') {
-      setMobileSheetOpen(true);
+      setSheetOpen(true);
     } else {
-      setMobileSheetOpen(false);
+      setSheetOpen(false);
     }
-    if (mobileNavTab === 'DECK_A') setMobileDeckFocus('A');
-    if (mobileNavTab === 'DECK_B') setMobileDeckFocus('B');
+    if (mobileNavTab === 'DECK_A') setFocusedDeck('A');
+    if (mobileNavTab === 'DECK_B') setFocusedDeck('B');
   }, [layoutMode, mobileNavTab]);
 
   const showNotification = (msg: string, type: ToastType = 'info') => setToast({ msg, type });
 
-  const handleDeckStateUpdate = useCallback((id: DeckId, state: PlayerState) => {
+  const handleDeckStateUpdate = useCallback((id: PlayerDeckId, state: PlayerState) => {
     id === 'A' ? setDeckAState(state) : setDeckBState(state);
     if (state.isReady && state.title && state.videoId && state.sourceType === 'youtube') {
       setLibrary(prev => updateTrackMetadata(state.videoId, { title: state.title, author: state.author }, prev));
@@ -454,6 +478,15 @@ const App: React.FC = () => {
       >
         <span className="material-icons text-base">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
       </button>
+      <button
+        type="button"
+        onClick={() => setUiMode(p => (p === 'basic' ? 'pro' : 'basic'))}
+        className="utility-button m3-touch touch-target"
+        aria-label="Toggle Basic/Pro mode"
+        title={`Mode: ${uiMode}`}
+      >
+        <span className="material-icons text-base">tune</span>
+      </button>
     </div>
   );
 
@@ -487,19 +520,21 @@ const App: React.FC = () => {
 
   const handleMobileNavTabChange = (tab: 'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER') => {
     setMobileNavTab(tab);
-    if (tab === 'DECK_A') setMobileDeckFocus('A');
-    if (tab === 'DECK_B') setMobileDeckFocus('B');
+    if (tab === 'DECK_A') setFocusedDeck('A');
+    if (tab === 'DECK_B') setFocusedDeck('B');
     if (tab === 'LIBRARY') {
-      setMobileSheetOpen(true);
+      setSheetOpen(true);
       setMobileSheetExpanded(true);
-    };
-    if (tab !== 'LIBRARY') setMobileSheetOpen(false);
+      setMobileSheetTab('LIBRARY');
+      setSheetRoute('library');
+    }
+    if (tab !== 'LIBRARY') setSheetOpen(false);
   };
 
   const handleMobileSheetToggle = (open: boolean) => {
-    setMobileSheetOpen(open);
+    setSheetOpen(open);
     if (!open && mobileNavTab === 'LIBRARY') {
-      setMobileNavTab(mobileDeckFocus === 'B' ? 'DECK_B' : 'DECK_A');
+      setMobileNavTab(focusedDeck === 'B' ? 'DECK_B' : 'DECK_A');
     }
   };
 
@@ -515,20 +550,23 @@ const App: React.FC = () => {
   const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
 
   return (
-    <div className="app-shell" data-theme={theme}>
+    <div className="app-shell" data-theme={theme} data-ui-mode={uiMode} data-sheet-route={sheetRoute}>
       <div className="layout-root">
         {layoutMode === 'portrait' && (
           <MobilePortraitLayout
             deckA={deckA}
             deckB={deckB}
             mixer={mixerPanel}
-            deckFocus={mobileDeckFocus}
-            onDeckFocusChange={setMobileDeckFocus}
+            deckFocus={focusedDeck}
+            onDeckFocusChange={setFocusedDeck}
             navTab={mobileNavTab}
             onNavTabChange={handleMobileNavTabChange}
-            sheetOpen={mobileSheetOpen}
+            sheetOpen={sheetOpen}
             sheetTab={mobileSheetTab}
-            onSheetTabChange={setMobileSheetTab}
+            onSheetTabChange={tab => {
+              setMobileSheetTab(tab);
+              setSheetRoute(tabToRoute(tab));
+            }}
             onSheetToggle={handleMobileSheetToggle}
             sheetExpanded={mobileSheetExpanded}
             onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
@@ -545,10 +583,10 @@ const App: React.FC = () => {
             deckA={deckA}
             deckB={deckB}
             mixer={mixerPanel}
-            sheetOpen={mobileSheetOpen}
+            sheetOpen={sheetOpen}
             sheetTab={landscapeSheetTab}
             onSheetTabChange={tab => setMobileSheetTab(tab)}
-            onSheetToggle={setMobileSheetOpen}
+            onSheetToggle={setSheetOpen}
             sheetExpanded={mobileSheetExpanded}
             onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
             libraryPanel={libraryPanel}
@@ -583,7 +621,7 @@ const App: React.FC = () => {
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-3xl font-black text-[#D0BCFF] tracking-[0.3em] uppercase">Shortcut Engine</h2>
               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">
-                Pro Mode Active
+                {uiMode === 'pro' ? 'Pro Mode Active' : 'Basic Mode'}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-x-12 gap-y-6 text-sm">
