@@ -5,7 +5,7 @@ import LibraryPanel from './components/LibraryPanel';
 import QueuePanel from './components/QueuePanel';
 import SearchPanel from './components/SearchPanel';
 import Toast, { ToastType } from './components/Toast';
-import MobilePortraitLayout, { MobilePanelTab } from './components/layouts/MobilePortraitLayout';
+import MobilePortraitLayout from './components/layouts/MobilePortraitLayout';
 import MobileLandscapeLayout from './components/layouts/MobileLandscapeLayout';
 import TabletLayout from './components/layouts/TabletLayout';
 import CompactMixer from './components/CompactMixer';
@@ -36,18 +36,6 @@ import { useAutoDj } from './hooks/useAutoDj';
 import './styles/tokens.css';
 import './styles/layout.css';
 
-const tabToRoute = (tab: MobilePanelTab): SheetRoute => {
-  switch (tab) {
-    case 'QUEUE':
-      return 'queue';
-    case 'EFFECTS':
-      return 'fx';
-    case 'LIBRARY':
-    default:
-      return 'library';
-  }
-};
-
 const App: React.FC = () => {
   const [library, setLibrary] = useState<LibraryTrack[]>(() => loadLibrary());
   const [deckAState, setDeckAState] = useState<PlayerState | null>(null);
@@ -73,13 +61,12 @@ const App: React.FC = () => {
   const [deckAEq, setDeckAEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
   const [deckBEq, setDeckBEq] = useState({ hi: 1, mid: 1, low: 1, filter: 0 });
 
-  // PR1: global mobile UI state (used more deeply in PR2+)
+  // PR1: global mobile UI state
   const [focusedDeck, setFocusedDeck] = useState<UIDeckId>('A');
   const [uiMode, setUiMode] = useState<UIMode>('basic');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetRoute, setSheetRoute] = useState<SheetRoute>('library');
 
-  const [mobileSheetTab, setMobileSheetTab] = useState<MobilePanelTab>('LIBRARY');
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [mobileNavTab, setMobileNavTab] = useState<'LIBRARY' | 'DECK_A' | 'DECK_B' | 'MIXER'>('DECK_A');
   const [tabletPanelTab, setTabletPanelTab] = useState<'LIBRARY' | 'QUEUE'>('LIBRARY');
@@ -167,24 +154,22 @@ const App: React.FC = () => {
   }, [queue]);
 
   useEffect(() => {
-    // Keep "route" in sync with current mobile sheet tab
-    setSheetRoute(tabToRoute(mobileSheetTab));
-  }, [mobileSheetTab]);
-
-  useEffect(() => {
     if (layoutMode === 'tablet') {
       setSheetOpen(false);
       setEffectsDrawerOpen(false);
     }
     if (layoutMode === 'landscape') {
       setMobileSheetExpanded(false);
-      if (mobileSheetTab === 'EFFECTS') setMobileSheetTab('LIBRARY');
+      // Landscape uses a dedicated FX drawer, so avoid landing on fx route there.
+      if (sheetRoute === 'fx' || sheetRoute === 'pads' || sheetRoute === 'settings') {
+        setSheetRoute('library');
+      }
     }
     if (layoutMode === 'portrait') {
       setMobileSheetExpanded(false);
       setEffectsDrawerOpen(false);
     }
-  }, [layoutMode, mobileSheetTab]);
+  }, [layoutMode, sheetRoute]);
 
   useEffect(() => {
     if (layoutMode !== 'portrait') return;
@@ -439,6 +424,18 @@ const App: React.FC = () => {
     />
   );
 
+  const padsPanel = (
+    <div className="h-full min-h-0 flex items-center justify-center text-sm text-white/70">
+      Pads (coming soon)
+    </div>
+  );
+
+  const settingsPanel = (
+    <div className="h-full min-h-0 flex items-center justify-center text-sm text-white/70">
+      Settings (coming soon)
+    </div>
+  );
+
   const mixerPanel = (
     <Mixer
       className="w-full max-w-[360px]"
@@ -537,16 +534,14 @@ const App: React.FC = () => {
     if (tab === 'LIBRARY') {
       setSheetOpen(true);
       setMobileSheetExpanded(true);
-      setMobileSheetTab('LIBRARY');
       setSheetRoute('library');
       return;
     }
 
-    // Portrait "Mixer" becomes performance-safe FX access (decks stay visible)
+    // Portrait "FX" opens the hub sheet to fx route (decks stay visible)
     if (tab === 'MIXER') {
       setSheetOpen(true);
       setMobileSheetExpanded(false);
-      setMobileSheetTab('EFFECTS');
       setSheetRoute('fx');
       return;
     }
@@ -572,7 +567,7 @@ const App: React.FC = () => {
     />
   );
 
-  const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = mobileSheetTab === 'QUEUE' ? 'QUEUE' : 'LIBRARY';
+  const landscapeSheetTab: 'LIBRARY' | 'QUEUE' = sheetRoute === 'queue' ? 'QUEUE' : 'LIBRARY';
 
   return (
     <div className="app-shell" data-theme={theme} data-ui-mode={uiMode} data-sheet-route={sheetRoute}>
@@ -587,10 +582,10 @@ const App: React.FC = () => {
             navTab={mobileNavTab}
             onNavTabChange={handleMobileNavTabChange}
             sheetOpen={sheetOpen}
-            sheetTab={mobileSheetTab}
-            onSheetTabChange={tab => {
-              setMobileSheetTab(tab);
-              setSheetRoute(tabToRoute(tab));
+            sheetRoute={sheetRoute}
+            onSheetRouteChange={(route) => {
+              setSheetRoute(route);
+              setSheetOpen(true);
             }}
             onSheetToggle={handleMobileSheetToggle}
             sheetExpanded={mobileSheetExpanded}
@@ -598,6 +593,8 @@ const App: React.FC = () => {
             libraryPanel={libraryPanel}
             queuePanel={queuePanel}
             effectsPanel={effectsPanel}
+            padsPanel={padsPanel}
+            settingsPanel={settingsPanel}
             utilityBar={utilityBar}
             compactMixer={compactMixer}
           />
@@ -610,7 +607,7 @@ const App: React.FC = () => {
             mixer={mixerPanel}
             sheetOpen={sheetOpen}
             sheetTab={landscapeSheetTab}
-            onSheetTabChange={tab => setMobileSheetTab(tab)}
+            onSheetTabChange={tab => setSheetRoute(tab === 'QUEUE' ? 'queue' : 'library')}
             onSheetToggle={setSheetOpen}
             sheetExpanded={mobileSheetExpanded}
             onSheetExpandedToggle={() => setMobileSheetExpanded(prev => !prev)}
