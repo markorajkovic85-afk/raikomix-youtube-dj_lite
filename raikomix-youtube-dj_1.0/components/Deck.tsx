@@ -66,6 +66,21 @@ const Deck = forwardRef<DeckHandle, DeckProps>(({ id, color, onStateUpdate, onPl
   const [isScanning, setIsScanning] = useState(false);
   const [tapHistory, setTapHistory] = useState<number[]>([]);
   const [showRemaining, setShowRemaining] = useState(false);
+
+  // PR6: phone-first minimal deck surface.
+  const [compactUi, setCompactUi] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const apply = () => setCompactUi(mq.matches);
+    apply();
+    if (mq.addEventListener) mq.addEventListener('change', apply);
+    else (mq as any).addListener?.(apply);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', apply);
+      else (mq as any).removeListener?.(apply);
+    };
+  }, []);
   
   const [state, setState] = useState<PlayerState>({
     playing: false,
@@ -563,6 +578,11 @@ const effectNodesRef = useRef<{
     }
   }, [state.hotCues, state.currentTime, state.sourceType]);
 
+  // PR6: Dedicated cue button (performer-friendly); uses Hot Cue 1 as set/jump cue.
+  const handleCue = useCallback(() => {
+    handleHotCue(0, false);
+  }, [handleHotCue]);
+
   const seekToTimelinePosition = useCallback((clientX: number, target: HTMLDivElement) => {
     const rect = target.getBoundingClientRect();
     const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
@@ -809,68 +829,74 @@ const effectNodesRef = useRef<{
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 px-3 py-2 bg-black/30 rounded-2xl border border-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex items-baseline gap-1">
-                <div className={`text-2xl font-black mono ${isScanning ? 'animate-pulse text-gray-400' : ''}`} style={!isScanning ? { color } : {}}>
-                  {(state.bpm * state.playbackRate).toFixed(1)}
+        {/* PR6: Tempo section collapses by default on phones. */}
+        <details className="collapsible-panel" open={!compactUi}>
+          <summary>Tempo</summary>
+          <div className="collapsible-content">
+            <div className="flex flex-col gap-2 px-3 py-2 bg-black/30 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-baseline gap-1">
+                    <div className={`text-2xl font-black mono ${isScanning ? 'animate-pulse text-gray-400' : ''}`} style={!isScanning ? { color } : {}}>
+                      {(state.bpm * state.playbackRate).toFixed(1)}
+                    </div>
+                    <div className="text-[10px] text-gray-500 font-black uppercase">BPM</div>
+                  </div>
+                  <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Key: <span className="text-white/80">{state.musicalKey}</span></div>
                 </div>
-                <div className="text-[10px] text-gray-500 font-black uppercase">BPM</div>
+                <button onClick={handleTap} className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-gray-200 hover:text-white m3-touch touch-target">Tap</button>
               </div>
-              <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Key: <span className="text-white/80">{state.musicalKey}</span></div>
-            </div>
-            <button onClick={handleTap} className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-gray-200 hover:text-white m3-touch touch-target">Tap</button>
-          </div>
 
-          <div 
-            ref={tempoContainerRef}
-            className="flex items-center gap-3 bg-black/40 rounded-xl border border-white/10 px-3 py-1.5 select-none touch-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30 m3-touch"
-            onDoubleClick={() => updatePlaybackRate(1.0)}
-            onPointerDown={handleTempoPointerDown}
-            onPointerMove={handleTempoPointerMove}
-            onPointerUp={handleTempoPointerUp}
-            onPointerCancel={handleTempoPointerUp}
-            onWheel={(e) => {
-              e.preventDefault();
-              const delta = -e.deltaY * 0.001; // Fine control with mouse wheel
-              updatePlaybackRate(state.playbackRate + delta);
-            }}
-            title="Drag to Pitch • Scroll for Fine-Tune • Double-click to Reset"
-          >
-            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest w-10">Pitch</div>
-            <div className="relative flex-1 h-3">
-              <div className="absolute inset-y-1 left-0 right-0 flex items-center justify-between pointer-events-none opacity-40">
-                {[...Array(7)].map((_, i) => (
-                  <div key={i} className={`h-2 w-px ${i === 3 ? 'bg-white/70' : 'bg-white/30'}`} />
-                ))}
-              </div>
-              <div className="absolute inset-y-0 left-0 right-0 rounded-full bg-gradient-to-r from-white/5 via-white/10 to-white/5" />
-              <div
-                className="absolute top-1/2 w-3 h-3 rounded-full bg-[#D0BCFF] shadow-[0_0_8px_rgba(208,188,255,0.6)] pointer-events-none"
-                style={{
-                  left: `${((state.playbackRate - 0.5) / 1.0) * 100}%`,
-                  transform: 'translate(-50%, -50%)'
+              <div 
+                ref={tempoContainerRef}
+                className="flex items-center gap-3 bg-black/40 rounded-xl border border-white/10 px-3 py-1.5 select-none touch-none transition-all hover:border-white/20 active:border-[#D0BCFF]/30 m3-touch"
+                onDoubleClick={() => updatePlaybackRate(1.0)}
+                onPointerDown={handleTempoPointerDown}
+                onPointerMove={handleTempoPointerMove}
+                onPointerUp={handleTempoPointerUp}
+                onPointerCancel={handleTempoPointerUp}
+                onWheel={(e) => {
+                  e.preventDefault();
+                  const delta = -e.deltaY * 0.001; // Fine control with mouse wheel
+                  updatePlaybackRate(state.playbackRate + delta);
                 }}
-              />
-              <input
-                type="range"
-                min="0.5"
-                max="1.5"
-                step="0.0001"
-                value={state.playbackRate}
-                onInput={(e) => updatePlaybackRate(parseFloat(e.currentTarget.value))}
-                className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-              />
-            </div>
-            <div className={`text-[11px] font-black mono w-12 text-right ${Math.abs(state.playbackRate - 1.0) < 0.001 ? 'text-[#D0BCFF]' : 'text-gray-500'}`}>
-              {((state.playbackRate - 1.0) * 100).toFixed(2)}%
+                title="Drag to Pitch • Scroll for Fine-Tune • Double-click to Reset"
+              >
+                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest w-10">Pitch</div>
+                <div className="relative flex-1 h-3">
+                  <div className="absolute inset-y-1 left-0 right-0 flex items-center justify-between pointer-events-none opacity-40">
+                    {[...Array(7)].map((_, i) => (
+                      <div key={i} className={`h-2 w-px ${i === 3 ? 'bg-white/70' : 'bg-white/30'}`} />
+                    ))}
+                  </div>
+                  <div className="absolute inset-y-0 left-0 right-0 rounded-full bg-gradient-to-r from-white/5 via-white/10 to-white/5" />
+                  <div
+                    className="absolute top-1/2 w-3 h-3 rounded-full bg-[#D0BCFF] shadow-[0_0_8px_rgba(208,188,255,0.6)] pointer-events-none"
+                    style={{
+                      left: `${((state.playbackRate - 0.5) / 1.0) * 100}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.5"
+                    step="0.0001"
+                    value={state.playbackRate}
+                    onInput={(e) => updatePlaybackRate(parseFloat(e.currentTarget.value))}
+                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                  />
+                </div>
+                <div className={`text-[11px] font-black mono w-12 text-right ${Math.abs(state.playbackRate - 1.0) < 0.001 ? 'text-[#D0BCFF]' : 'text-gray-500'}`}>
+                  {((state.playbackRate - 1.0) * 100).toFixed(2)}%
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </details>
 
         <div className="relative flex items-center">
-          <div className="absolute inset-y-0 left-0 w-14 flex items-center justify-center">
+          <div className="absolute inset-y-0 left-0 w-14 flex flex-col items-center justify-center gap-2">
             <button
               onClick={togglePlay}
               disabled={!state.isReady}
@@ -878,6 +904,16 @@ const effectNodesRef = useRef<{
               aria-label={state.playing ? 'Pause' : 'Play'}
             >
               <span className="material-icons text-[22px] text-white">{state.playing ? 'pause' : 'play_arrow'}</span>
+            </button>
+
+            <button
+              onClick={handleCue}
+              disabled={!state.isReady}
+              className="w-11 h-11 rounded-full bg-black/70 border border-white/15 flex items-center justify-center transition-all m3-touch touch-target hover:border-white/30"
+              aria-label="Cue (Hot Cue 1: set/jump)"
+              title="Cue (Hot Cue 1: set/jump)"
+            >
+              <span className="material-icons text-[20px] text-white">flag</span>
             </button>
           </div>
           <div className="w-full pl-14">
@@ -920,7 +956,7 @@ const effectNodesRef = useRef<{
         </div>
       </div>
 
-      <details className="collapsible-panel">
+      <details className="collapsible-panel" open={!compactUi}>
         <summary>Performance Controls</summary>
         <div className="collapsible-content">
           <div className="grid grid-cols-2 gap-2">
