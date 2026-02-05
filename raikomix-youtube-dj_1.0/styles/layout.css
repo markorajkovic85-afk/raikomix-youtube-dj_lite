@@ -82,21 +82,33 @@ button > * {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 16px 0;
-  background: var(--md-sys-color-surface);
+  gap: var(--rm-s-3);
+  padding: var(--rm-s-4) var(--rm-s-4) 0;
+  background: var(--rm-bg-0);
+  color: var(--rm-text-1);
 }
 
 .mobile-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 16px;
-  background: var(--md-sys-color-surface-container-high);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: var(--rm-s-3);
+  padding: var(--rm-s-2) var(--rm-s-3);
+  border-radius: var(--rm-r-3);
+  background: var(--rm-surface);
+  border: 1px solid var(--rm-stroke);
   box-shadow: var(--md-sys-elevation-1);
+}
+
+.mobile-top-bar__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--rm-text-2);
+}
+
+.mobile-top-bar__title p:last-child {
+  color: var(--rm-text-1);
 }
 
 .mobile-main {
@@ -104,7 +116,7 @@ button > * {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--rm-s-3);
   overflow: auto;
   /* PR5: Reserve space for fixed dock elements. */
   padding-bottom: calc(var(--rm-mobile-dock-h) + env(safe-area-inset-bottom));
@@ -129,30 +141,30 @@ button > * {
 
 .deck-tabs {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--rm-s-2);
   align-items: center;
-  background: var(--md-sys-color-surface-container-high);
+  background: var(--rm-surface);
   padding: 6px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--rm-stroke);
 }
 
 .deck-tab {
   border-radius: 999px;
   padding: 10px 18px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--rm-text-2);
 }
 
 .deck-tab.is-active {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-  box-shadow: 0 0 14px rgba(208, 188, 255, 0.35);
+  background: rgba(208, 188, 255, 0.16);
+  color: var(--rm-text-1);
+  box-shadow: 0 0 12px rgba(208, 188, 255, 0.25);
 }
 
 .deck-switcher__button {
@@ -206,7 +218,7 @@ button > * {
   flex: 1;
   min-height: 0;
   display: grid;
-  gap: 12px;
+  gap: var(--rm-s-3);
 }
 
 .deck-slot {
@@ -215,6 +227,24 @@ button > * {
 
 .deck-slot.is-hidden {
   display: none;
+}
+
+.deck-slot--frame {
+  border-radius: var(--rm-r-3);
+  padding: var(--rm-s-2);
+  border: 1px solid var(--rm-stroke);
+  background: rgba(0, 0, 0, 0.24);
+  transition: border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.deck-slot--frame.is-focused {
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 18px var(--deck-glow);
+  opacity: 1;
+}
+
+.deck-slot--frame.is-secondary {
+  opacity: 0.86;
 }
 
 .mixer-strip {
@@ -228,10 +258,10 @@ button > * {
   left: 16px;
   right: 16px;
   bottom: calc(var(--rm-mobile-nav-h) + env(safe-area-inset-bottom));
-  padding: 12px;
+  padding: var(--rm-s-3);
   border-radius: 20px;
-  background: var(--md-sys-color-surface-container);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--rm-surface);
+  border: 1px solid var(--rm-stroke);
   box-shadow: var(--md-sys-elevation-2);
   z-index: 45;
 }
@@ -241,12 +271,12 @@ button > * {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: var(--rm-s-2) var(--rm-s-4) calc(var(--rm-s-3) + env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  background: var(--md-sys-color-surface-container);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: var(--rm-s-2);
+  background: var(--rm-bg-1);
+  border-top: 1px solid var(--rm-stroke);
   box-shadow: var(--md-sys-elevation-2);
   z-index: 50;
 }
@@ -313,15 +343,15 @@ quick-mix-fab {
   border-radius: 16px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--rm-text-2);
   border: 1px solid transparent;
   background: transparent;
 }
 
 .bottom-nav__item.is-active {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(208, 188, 255, 0.18);
+  color: var(--rm-text-1);
+  border-color: var(--rm-stroke);
 }
 
 .bottom-nav__icon {
@@ -353,9 +383,9 @@ quick-mix-fab {
   bottom: calc(var(--rm-mobile-dock-h) + env(safe-area-inset-bottom));
   margin: 0 auto;
   max-width: 960px;
-  background: var(--md-sys-color-surface-container);
+  background: var(--rm-bg-1);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--rm-stroke);
   display: flex;
   flex-direction: column;
   height: min(
@@ -378,10 +408,10 @@ quick-mix-fab {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.35);
+  gap: var(--rm-s-3);
+  padding: var(--rm-s-3);
+  border-bottom: 1px solid var(--rm-stroke);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .panel-sheet__handle {
@@ -410,14 +440,14 @@ quick-mix-fab {
   text-transform: uppercase;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--rm-text-2);
   white-space: nowrap;
 }
 
 .panel-tab.is-active {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-  box-shadow: 0 0 12px rgba(208, 188, 255, 0.35);
+  background: rgba(208, 188, 255, 0.16);
+  color: var(--rm-text-1);
+  box-shadow: 0 0 10px rgba(208, 188, 255, 0.25);
 }
 
 .panel-sheet__actions {
