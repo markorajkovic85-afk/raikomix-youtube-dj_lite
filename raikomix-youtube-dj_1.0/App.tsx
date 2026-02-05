@@ -31,6 +31,7 @@ import { loadQueue, saveQueue } from './utils/queueStorage';
 import EffectsPanel from './components/EffectsPanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
+import { useAutoDj } from './hooks/useAutoDj';
 import './styles/layout.css';
 
 const App: React.FC = () => {
@@ -77,6 +78,43 @@ const App: React.FC = () => {
     if (width >= 1024) return 'tablet';
     if (width > height) return 'landscape';
     return 'portrait';
+  });
+
+  const handleLoadVideo = useCallback(
+    (videoId: string, url: string, deck: DeckId, sourceType: TrackSourceType = 'youtube', title?: string, author?: string) => {
+      const ref = deck === 'A' ? deckARef : deckBRef;
+      if (ref.current) {
+        ref.current.loadVideo(url, sourceType, { title, author });
+        setLibrary(prev => incrementPlayCount(videoId, prev));
+        showNotification(`${sourceType === 'local' ? 'File' : 'Stream'} Loaded to Deck ${deck}`, 'success');
+      }
+    },
+    []
+  );
+
+  const handleRemoveFromQueue = useCallback((id: string) => {
+    setQueue(prev => prev.filter(i => i.id !== id));
+  }, []);
+
+  // Initialize Auto DJ hook
+  const {
+    autoDj,
+    toggleAutoDj,
+    setMixLeadSeconds,
+    setMixDurationSeconds,
+    getCountdown,
+    getNextTrackInfo,
+    isAutoDjActive,
+    isMixPending,
+    nextDeck
+  } = useAutoDj({
+    queue,
+    deckAState,
+    deckBState,
+    onLoadToDeck: handleLoadVideo,
+    onRemoveFromQueue: handleRemoveFromQueue,
+    onCrossfaderChange: setCrossfader,
+    currentCrossfader: crossfader
   });
 
   useEffect(() => {
@@ -144,18 +182,6 @@ const App: React.FC = () => {
       setLibrary(prev => updateTrackMetadata(state.videoId, { title: state.title, author: state.author }, prev));
     }
   }, []);
-
-  const handleLoadVideo = useCallback(
-    (videoId: string, url: string, deck: DeckId, sourceType: TrackSourceType = 'youtube', title?: string, author?: string) => {
-      const ref = deck === 'A' ? deckARef : deckBRef;
-      if (ref.current) {
-        ref.current.loadVideo(url, sourceType, { title, author });
-        setLibrary(prev => incrementPlayCount(videoId, prev));
-        showNotification(`${sourceType === 'local' ? 'File' : 'Stream'} Loaded to Deck ${deck}`, 'success');
-      }
-    },
-    []
-  );
 
   const handleAddToQueue = useCallback((track: LibraryTrack | YouTubeSearchResult) => {
     const item: QueueItem = {
@@ -322,7 +348,7 @@ const App: React.FC = () => {
           handleLoadVideo(i.videoId, i.url, d, i.sourceType || 'youtube', i.title, i.author);
           setQueue(p => p.filter(q => q.id !== i.id));
         }}
-        onRemove={id => setQueue(p => p.filter(i => i.id !== id))}
+        onRemove={handleRemoveFromQueue}
         onClear={() => setQueue([])}
         onReorder={(from, to) => {
           setQueue(prev => {
@@ -335,6 +361,16 @@ const App: React.FC = () => {
             return next;
           });
         }}
+        // Auto DJ props
+        autoDjEnabled={isAutoDjActive}
+        autoDjMixLeadSeconds={autoDj.mixLeadSeconds}
+        autoDjMixDurationSeconds={autoDj.mixDurationSeconds}
+        autoDjCountdown={getCountdown()}
+        autoDjNextTrack={getNextTrackInfo()}
+        autoDjNextDeck={nextDeck}
+        onAutoDjToggle={toggleAutoDj}
+        onAutoDjMixLeadChange={setMixLeadSeconds}
+        onAutoDjMixDurationChange={setMixDurationSeconds}
       />
     </div>
   );
